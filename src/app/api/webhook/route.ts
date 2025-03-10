@@ -116,7 +116,8 @@ export async function POST(request: NextRequest) {
                     end_time: payload.meeting_info.end_time * 1000,
                     meeting_name: payload.meeting_info.subject,
                     user_name: payload.meeting_info.creator.user_name,
-                    userid: payload.meeting_info.creator.userid
+                    userid: payload.meeting_info.creator.userid,
+                    record_file_id: payload.recording_files[0].record_file_id,
                 };
 
                 await createRecords(testTableId, testRecord);
