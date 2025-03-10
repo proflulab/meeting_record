@@ -2,7 +2,7 @@
  * @Author: 杨仕明 shiming.y@qq.com
  * @Date: 2025-03-10 14:13:25
  * @LastEditors: 杨仕明 shiming.y@qq.com
- * @LastEditTime: 2025-03-10 14:57:36
+ * @LastEditTime: 2025-03-10 21:40:17
  * @FilePath: /meeting_record/src/utils/bitable.ts
  * @Description: 飞书多维表格操作工具函数
  */
@@ -16,36 +16,31 @@ const client = new BaseClient({
 });
 
 
-// 记录类型定义
-interface IRecord {
-    record_id: string;
-    fields: Record<string, any>
-}
-
-
-// 错误类型
-class BitableError extends Error {
-    constructor(message: string) {
-        super(message);
-        this.name = 'BitableError';
-    }
-}
-
-
-/**
- * 创建新记录
- * @param records 要创建的记录列表
+/** * 创建新记录
+ * @param tableId 表格ID
+ * @param fields 记录字段数据
  * @returns 创建的记录列表
  */
-export async function createRecords(tableId: string, records: Omit<IRecord, 'record_id'>[]): Promise<IRecord[]> {
+export async function createRecords(tableId: string, fields: Record<string, any>) {
     try {
-        const response = await client.base.appTableRecord.batchCreate({
+        // 验证环境变量配置
+        if (!process.env.LARK_BASE_APP_TOKEN || !process.env.LARK_BASE_PERSONAL_TOKEN) {
+            throw new Error('缺少必要的飞书多维表格配置，请检查环境变量 LARK_BASE_APP_TOKEN 和 LARK_BASE_PERSONAL_TOKEN');
+        }
+
+        const response = await client.base.appTableRecord.create({
             path: { table_id: tableId },
-            data: { records }
+            data: {
+                fields,
+            },
         });
-        return response?.data?.records || [];
-    } catch (error) {
-        throw new BitableError(`创建记录失败: ${error.message}`);
+        console.log(response.data);
+        return response.data;
+    } catch (error: unknown) {
+        if (error instanceof Error) {
+            throw new Error(`创建记录失败: ${error.message}`);
+        }
+        throw new Error('创建记录失败: 未知错误');
     }
 }
 

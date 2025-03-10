@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { verifySignature, aesDecrypt } from "@/utils/crypto";
-import { getRecordingDetail } from "@/utils/meeting";
+import { createRecords } from '@/utils/bitable';
 
 // 配置信息，实际应用中应从环境变量获取
 const TOKEN = process.env.TENCENT_MEETING_TOKEN || "";
@@ -107,6 +107,19 @@ export async function POST(request: NextRequest) {
                     recordingFiles: payload.recording_files,
                     meetingInfo: payload.meeting_info
                 });
+
+                const testTableId = 'tbl4EkvHwDU3olD7';
+                // 创建测试记录数据
+                const testRecord = {
+                    meeting_id: payload.meeting_info.meeting_id,
+                    start_time: payload.meeting_info.start_time * 1000,
+                    end_time: payload.meeting_info.end_time * 1000,
+                    meeting_name: payload.meeting_info.subject,
+                    user_name: payload.meeting_info.creator.user_name,
+                    userid: payload.meeting_info.creator.userid
+                };
+
+                const result = await createRecords(testTableId, testRecord);
 
                 // 获取录制详情
                 // try {
