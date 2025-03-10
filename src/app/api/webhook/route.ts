@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
                     userid: payload.meeting_info.creator.userid
                 };
 
-                const result = await createRecords(testTableId, testRecord);
+                await createRecords(testTableId, testRecord);
 
                 // 获取录制详情
                 // try {
