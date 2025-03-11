@@ -1,6 +1,9 @@
 import { NextRequest } from "next/server";
 import { verifySignature, aesDecrypt } from "@/utils/crypto";
-import { createRecords } from '@/utils/bitable';
+import { createRecords, updateRecords } from '@/utils/bitable';
+import { getmeetFile } from '@/utils/meeting';
+import { fetchTextFromUrl } from '@/utils/file';  // 添加这行
+
 
 // 配置信息，实际应用中应从环境变量获取
 const TOKEN = process.env.TENCENT_MEETING_TOKEN || "";
@@ -10,6 +13,7 @@ const ENCODING_AES_KEY = process.env.TENCENT_MEETING_ENCODING_AES_KEY || "";
  * GET请求处理 - 用于URL有效性验证
  */
 export async function GET(request: NextRequest) {
+
     try {
         // 1. 获取URL参数
         const searchParams = request.nextUrl.searchParams;
@@ -120,17 +124,31 @@ export async function POST(request: NextRequest) {
                     record_file_id: payload.recording_files[0].record_file_id,
                 };
 
-                await createRecords(testTableId, testRecord);
+                const record_result = await createRecords(testTableId, testRecord);
 
-                // 获取录制详情
-                // try {
-                //     const recordFileId = payload.recording_files[0].record_file_id;
-                //     const userId = payload.meeting_info.host_user_id;
-                //     const recordingDetail = await getRecordingDetail(recordFileId, userId);
-                //     console.log("Recording detail fetched:", recordingDetail);
-                // } catch (error) {
-                //     console.error("Error fetching recording detail:", error);
-                // }
+                const meetfile_result = await getmeetFile(payload.recording_files[0].record_file_id, payload.meeting_info.creator.userid);
+
+                // 从返回结果中获取record_id
+                // 使用可选链操作符来安全访问属性
+                const recordId = record_result?.record?.record_id;
+                if (!recordId) {
+                    throw new Error('无法获取记录ID，record_result可能未包含预期的数据结构');
+                }
+
+                const fileAddress = meetfile_result.meeting_summary?.find(
+                    (item) => item.file_type === "txt"
+                )?.download_address;
+
+                // 尝试获取会议文件内容
+                const fileContent = await fetchTextFromUrl(fileAddress || "")
+                console.log('Meeting file content:', fileContent);
+
+                // 使用record_id更新记录
+                const updateResult = await updateRecords(testTableId, recordId, {
+                    // 这里添加需要更新的字段
+                    meeting_summary: fileContent || ""
+                });
+
                 // TODO: 这里可以添加将录制信息保存到数据库的逻辑
                 break;
             default:

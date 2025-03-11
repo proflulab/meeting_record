@@ -15,6 +15,18 @@ interface RecordingDetail {
     audio_address?: string;
     audio_address_file_type?: string;
     meeting_summary?: MeetingSummary[];
+    // AI会议转写记录
+    ai_meeting_transcripts?: MeetingSummary[];
+    // AI会议纪要
+    ai_minutes?: MeetingSummary[];
+    // 录制文件名称
+    record_name?: string;
+    // 录制开始时间戳
+    start_time?: string;
+    // 录制结束时间戳
+    end_time?: string;
+    // 会议名称
+    meeting_record_name?: string;
 }
 
 /**
@@ -37,32 +49,29 @@ function generateSignature(
     requestUri: string,
     requestBody: string
 ): string {
-    // 1. 构造签名字符串
     const headerString = `X-TC-Key=${secretId}&X-TC-Nonce=${headerNonce}&X-TC-Timestamp=${headerTimestamp}`;
     const stringToSign = `${httpMethod}\n${headerString}\n${requestUri}\n${requestBody}`;
 
     // 2. 使用HMAC-SHA256计算签名
     const hmac = createHmac('sha256', secretKey);
-    const signature = hmac.update(stringToSign).digest('hex');
-
-    // 3. Base64编码
-    return Buffer.from(signature).toString('base64');
+    const hash = hmac.update(stringToSign).digest('hex'); // 先获取十六进制字符串
+    return Buffer.from(hash).toString('base64'); // 再进行base64编码
 }
 
 /**
  * 获取录制文件详情
- * @param recordFileId 录制文件ID
+ * @param fileId 录制文件ID
  * @param userId 用户ID
  * @returns 录制详情信息
  */
-export async function getRecordingDetail(recordFileId: string, userId: string): Promise<RecordingDetail> {
+export async function getmeetFile(fileId: string, userId: string): Promise<RecordingDetail> {
     try {
-        const requestUri = `/v1/addresses/${recordFileId}?userid=${userId}`;
+        const requestUri = `/v1/addresses/${fileId}?userid=${userId}`;
         const apiUrl = `https://api.meeting.qq.com${requestUri}`;
 
         // 1. 准备请求头参数
         const timestamp = Math.floor(Date.now() / 1000).toString();
-        const nonce = Math.random().toString(36).substring(2, 15);
+        const nonce = Math.floor(Math.random() * 100000).toString();
         const secretId = process.env.TENCENT_MEETING_SECRET_ID || '';
         const secretKey = process.env.TENCENT_MEETING_SECRET_KEY || '';
 
@@ -92,14 +101,30 @@ export async function getRecordingDetail(recordFileId: string, userId: string): 
             }
         });
 
-        if (!response.ok) {
-            throw new Error(`API request failed with status ${response.status}`);
+        const responseData = await response.json();
+
+        // 4. 检查错误信息
+        if (responseData.error_info) {
+            const errorInfo = responseData.error_info;
+            console.error('API请求失败:', {
+                错误码: errorInfo.error_code,
+                新错误码: errorInfo.new_error_code,
+                错误信息: errorInfo.message,
+                请求URI: requestUri,
+                时间戳: timestamp
+            });
+
+            // 特殊处理IP白名单错误
+            if (errorInfo.error_code === 500125) {
+                throw new Error(`IP白名单错误: ${errorInfo.message}\n请确保已在腾讯会议应用配置中添加当前服务器IP到白名单。`);
+            }
+
+            throw new Error(`API请求失败: ${errorInfo.message} (错误码: ${errorInfo.error_code})`);
         }
 
-        const data = await response.json();
-        return data as RecordingDetail;
+        return responseData as RecordingDetail;
     } catch (error) {
-        console.error('Error fetching recording detail:', error);
+        console.error('获取录制文件详情失败:', error);
         throw error;
     }
 }
