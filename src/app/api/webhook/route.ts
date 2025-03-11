@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
                 console.log('Meeting file content:', fileContent);
 
                 // 使用record_id更新记录
-                const updateResult = await updateRecords(testTableId, recordId, {
+                await updateRecords(testTableId, recordId, {
                     // 这里添加需要更新的字段
                     meeting_summary: fileContent || ""
                 });
