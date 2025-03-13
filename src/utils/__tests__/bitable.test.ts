@@ -2,13 +2,13 @@
  * @Author: 杨仕明 shiming.y@qq.com
  * @Date: 2025-03-11 00:58:49
  * @LastEditors: 杨仕明 shiming.y@qq.com
- * @LastEditTime: 2025-03-11 21:26:26
+ * @LastEditTime: 2025-03-13 01:26:21
  * @FilePath: /meeting_record/src/utils/__tests__/bitable.test.ts
  * @Description: 
  * 
  * Copyright (c) 2025 by ${git_name_email}, All Rights Reserved. 
  */
-import { createRecords, uploadFileFromUrl, updateRecords } from '../bitable';
+import { createRecords, uploadFileFromUrl, updateRecords, searchRecords } from '../bitable';
 
 
 beforeAll(() => {
@@ -51,6 +51,30 @@ describe('createRecords', () => {
 
             const result = await updateRecords(testTableId, recordId, testRecord);
             // expect(result).toBeDefined();
+            console.log('API 返回结果:', result);
+        } catch (error) {
+            console.error('测试失败:', error);
+            throw error;
+        }
+    }, 10000);
+
+    it('应该成功查找记录并返回结果', async () => {
+        try {
+            // 创建测试数据
+            const testTableId = 'tbl4EkvHwDU3olD7';
+            // 创建测试记录数据
+            const testMeetingId = '6925115673476180514';
+            // 创建测试记录数据
+            const params = {
+                filter: `CurrentValue.[meeting_id]="${testMeetingId}"`,
+            };
+
+            const result = await searchRecords(testTableId, params);
+            if (result?.total && result.total > 0) {
+                console.log('11223344');
+                return;
+            }
+            // console.log('API 返回结果:', result?.total);
             console.log('API 返回结果:', result);
         } catch (error) {
             console.error('测试失败:', error);

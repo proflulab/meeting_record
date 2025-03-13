@@ -2,7 +2,7 @@
  * @Author: 杨仕明 shiming.y@qq.com
  * @Date: 2025-03-10 14:13:25
  * @LastEditors: 杨仕明 shiming.y@qq.com
- * @LastEditTime: 2025-03-11 19:17:48
+ * @LastEditTime: 2025-03-13 15:42:13
  * @FilePath: /meeting_record/src/utils/bitable.ts
  * @Description: 飞书多维表格操作工具函数
  */
@@ -99,6 +99,43 @@ export async function updateRecords(tableId: string, recordId: string, fields: R
             data: {
                 fields,
             },
+        });
+        console.log(response.data);
+        return response.data;
+    } catch (error: unknown) {
+        if (error instanceof Error) {
+            throw new Error(`创建记录失败: ${error.message}`);
+        }
+        throw new Error('创建记录失败: 未知错误');
+    }
+}
+
+/** * 列出记录
+ * @param tableId 表格ID
+ * @param params 列出条件
+ * @returns 列出的记录列表
+ */
+export async function searchRecords(tableId: string, params: {
+    view_id?: string;
+    filter?: string;
+    sort?: string;
+    field_names?: string;
+    text_field_as_array?: boolean;
+    user_id_type?: "user_id" | "union_id" | "open_id";
+    display_formula_ref?: boolean;
+    automatic_fields?: boolean;
+    page_token?: string;
+    page_size?: number;
+}) {
+    try {
+        // 验证环境变量配置
+        if (!process.env.LARK_BASE_APP_TOKEN || !process.env.LARK_BASE_PERSONAL_TOKEN) {
+            throw new Error('缺少必要的飞书多维表格配置，请检查环境变量 LARK_BASE_APP_TOKEN 和 LARK_BASE_PERSONAL_TOKEN');
+        }
+
+        const response = await client.base.appTableRecord.list({
+            path: { table_id: tableId },
+            params: params,
         });
         console.log(response.data);
         return response.data;
