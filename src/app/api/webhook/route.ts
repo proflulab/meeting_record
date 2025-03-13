@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
 
                 // 根据meetingI查询记录是否存在，如果不存在，则创建记录
                 const params = {
-                    filter: `CurrentValue.[meeting_id]="${meetingId}"`,
+                    filter: `CurrentValue.[record_file_id]="${fileId}"`,
                 };
                 const search_result = await searchRecords(tableId, params);
                 if (search_result?.total && search_result.total > 0) {
