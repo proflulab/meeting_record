@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { verifySignature, aesDecrypt } from "@/utils/crypto";
-import { createRecords, updateRecords } from '@/utils/bitable';
+import { createRecords, updateRecords, searchRecords } from '@/utils/bitable';
 import { getmeetFile } from '@/utils/meeting';
 import { fetchTextFromUrl } from '@/utils/file';  // 添加这行
 
@@ -105,28 +105,36 @@ export async function POST(request: NextRequest) {
             case "recording.completed":
                 // 处理云录制完成事件
                 const payload = eventData.payload[0];
-                console.log("Recording completed event received:", {
-                    traceId: eventData.trace_id,
-                    operateTime: new Date(payload.operate_time).toISOString(),
-                    recordingFiles: payload.recording_files,
-                    meetingInfo: payload.meeting_info
-                });
 
-                const testTableId = 'tbl4EkvHwDU3olD7';
-                // 创建测试记录数据
+                const tableId = 'tbl4EkvHwDU3olD7';
+                const meetingId = payload.meeting_info.meeting_id;
+                const fileId = payload.recording_files[0].record_file_id;
+                const userId = payload.meeting_info.creator.userid;
+                const userName = payload.meeting_info.creator.user_name;
+
+                // 根据meetingI查询记录是否存在，如果不存在，则创建记录
+                const params = {
+                    filter: `CurrentValue.[meeting_id]="${meetingId}"`,
+                };
+                const search_result = await searchRecords(tableId, params);
+                if (search_result?.total && search_result.total > 0) {
+                    console.log('记录已存在，无需创建！');
+                    return;
+                }
+
+                // 创建记录数据字段数据
                 const testRecord = {
-                    meeting_id: payload.meeting_info.meeting_id,
+                    meeting_id: meetingId,
                     start_time: payload.meeting_info.start_time * 1000,
                     end_time: payload.meeting_info.end_time * 1000,
                     meeting_name: payload.meeting_info.subject,
-                    user_name: payload.meeting_info.creator.user_name,
-                    userid: payload.meeting_info.creator.userid,
-                    record_file_id: payload.recording_files[0].record_file_id,
+                    user_name: userName,
+                    userid: userId,
+                    record_file_id: fileId,
                 };
 
-                const record_result = await createRecords(testTableId, testRecord);
-
-                const meetfile_result = await getmeetFile(payload.recording_files[0].record_file_id, payload.meeting_info.creator.userid);
+                const record_result = await createRecords(tableId, testRecord);
+                const meetfile_result = await getmeetFile(fileId, userId);
 
                 // 从返回结果中获取record_id
                 // 使用可选链操作符来安全访问属性
@@ -144,12 +152,10 @@ export async function POST(request: NextRequest) {
                 console.log('Meeting file content:', fileContent);
 
                 // 使用record_id更新记录
-                await updateRecords(testTableId, recordId, {
+                await updateRecords(tableId, recordId, {
                     // 这里添加需要更新的字段
                     meeting_summary: fileContent || ""
                 });
-
-                // TODO: 这里可以添加将录制信息保存到数据库的逻辑
                 break;
             default:
                 console.log(`Unhandled event type: ${eventData.event}`);
