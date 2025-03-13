@@ -1,6 +1,10 @@
 import { createHmac } from 'crypto';
-import { HttpsProxyAgent } from 'https-proxy-agent';
-const fetch = require('node-fetch');
+// import { HttpsProxyAgent } from 'https-proxy-agent';
+// import fetch from 'node-fetch';
+const axios = require('axios');
+const url = require('url');
+const fixieUrl = url.parse(process.env.FIXIE_URL || '');
+const fixieAuth = fixieUrl.auth.split(':');
 
 interface MeetingSummary {
     download_address: string;
@@ -93,16 +97,36 @@ export async function getmeetFile(fileId: string, userId: string): Promise<Recor
             ''
         );
 
-        const proxy = process.env.FIXIE_URL;
-        let agent;
-        if (proxy) {
-            agent = new HttpsProxyAgent(proxy);
-        }
+        // const proxy = process.env.FIXIE_URL;
+        // let agent;
+        // if (proxy) {
+        //     agent = new HttpsProxyAgent(proxy);
+        // }
 
 
         // 3. 发送请求
-        const response = await fetch(apiUrl, {
-            method: 'GET',
+        // const response = await fetch(apiUrl, {
+        //     method: 'GET',
+        //     headers: {
+        //         'Content-Type': 'application/json',
+        //         'X-TC-Key': secretId,
+        //         'X-TC-Timestamp': timestamp,
+        //         'X-TC-Nonce': nonce,
+        //         'X-TC-Signature': signature,
+        //         'AppId': process.env.TENCENT_MEETING_APP_ID || '',
+        //         'SdkId': process.env.TENCENT_MEETING_SDK_ID || '',
+        //         'X-TC-Registered': '1'
+        //     },
+        //     agent: agent,
+        // });
+
+        const response = await axios.get(apiUrl, {
+            proxy: {
+                protocol: 'http',
+                host: fixieUrl.hostname,
+                port: fixieUrl.port,
+                auth: { username: fixieAuth[0], password: fixieAuth[1] }
+            },
             headers: {
                 'Content-Type': 'application/json',
                 'X-TC-Key': secretId,
@@ -113,11 +137,10 @@ export async function getmeetFile(fileId: string, userId: string): Promise<Recor
                 'SdkId': process.env.TENCENT_MEETING_SDK_ID || '',
                 'X-TC-Registered': '1'
             },
-            agent: agent,
-        });
+        })
 
 
-        const responseData = await response.json() as RecordingDetail;
+        const responseData = await response.data as RecordingDetail;
 
         // 4. 检查错误信息
         if (responseData.error_info) {
