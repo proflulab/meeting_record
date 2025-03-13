@@ -2,14 +2,14 @@
  * @Author: 杨仕明 shiming.y@qq.com
  * @Date: 2025-03-11 01:02:22
  * @LastEditors: 杨仕明 shiming.y@qq.com
- * @LastEditTime: 2025-03-11 20:17:56
+ * @LastEditTime: 2025-03-13 17:19:34
  * @FilePath: /meeting_record/src/utils/__tests__/meeting.test.ts
  * @Description: 
  * 
  * Copyright (c) 2025 by ${git_name_email}, All Rights Reserved. 
  */
 
-import { getmeetFile } from '../meeting';
+import { getmeetFile } from '../meeting_proxy';
 
 describe('getRecordingDetail', () => {
 
