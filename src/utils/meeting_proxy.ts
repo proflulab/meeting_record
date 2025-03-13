@@ -1,10 +1,21 @@
 import { createHmac } from 'crypto';
-// import { HttpsProxyAgent } from 'https-proxy-agent';
-// import fetch from 'node-fetch';
-const axios = require('axios');
-const url = require('url');
-const fixieUrl = url.parse(process.env.FIXIE_URL || '');
-const fixieAuth = fixieUrl.auth.split(':');
+import axios from 'axios';
+
+
+const fixieUrlString = process.env.FIXIE_URL || '';
+let fixieAuth = ['', ''];
+let fixieHostname = '';
+let fixiePort = 0; // 修改为数字类型的初始值
+
+if (fixieUrlString) {
+    const fixieUrl = new URL(fixieUrlString);
+    fixieHostname = fixieUrl.hostname;
+    fixiePort = fixieUrl.port ? parseInt(fixieUrl.port, 10) : 80; // 将端口转换为数字，如果没有指定则使用默认端口80
+
+    if (fixieUrl.username && fixieUrl.password) {
+        fixieAuth = [fixieUrl.username, fixieUrl.password];
+    }
+}
 
 interface MeetingSummary {
     download_address: string;
@@ -97,34 +108,12 @@ export async function getmeetFile(fileId: string, userId: string): Promise<Recor
             ''
         );
 
-        // const proxy = process.env.FIXIE_URL;
-        // let agent;
-        // if (proxy) {
-        //     agent = new HttpsProxyAgent(proxy);
-        // }
-
-
-        // 3. 发送请求
-        // const response = await fetch(apiUrl, {
-        //     method: 'GET',
-        //     headers: {
-        //         'Content-Type': 'application/json',
-        //         'X-TC-Key': secretId,
-        //         'X-TC-Timestamp': timestamp,
-        //         'X-TC-Nonce': nonce,
-        //         'X-TC-Signature': signature,
-        //         'AppId': process.env.TENCENT_MEETING_APP_ID || '',
-        //         'SdkId': process.env.TENCENT_MEETING_SDK_ID || '',
-        //         'X-TC-Registered': '1'
-        //     },
-        //     agent: agent,
-        // });
-
+        // https://usefixie.com/documentation/javascript
         const response = await axios.get(apiUrl, {
             proxy: {
                 protocol: 'http',
-                host: fixieUrl.hostname,
-                port: fixieUrl.port,
+                host: fixieHostname,
+                port: fixiePort,
                 auth: { username: fixieAuth[0], password: fixieAuth[1] }
             },
             headers: {
