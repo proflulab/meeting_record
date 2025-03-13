@@ -2,7 +2,7 @@
  * @Author: 杨仕明 shiming.y@qq.com
  * @Date: 2025-03-10 14:13:25
  * @LastEditors: 杨仕明 shiming.y@qq.com
- * @LastEditTime: 2025-03-12 21:39:13
+ * @LastEditTime: 2025-03-13 15:42:13
  * @FilePath: /meeting_record/src/utils/bitable.ts
  * @Description: 飞书多维表格操作工具函数
  */
@@ -115,7 +115,18 @@ export async function updateRecords(tableId: string, recordId: string, fields: R
  * @param params 列出条件
  * @returns 列出的记录列表
  */
-export async function searchRecords(tableId: string, params: any) {
+export async function searchRecords(tableId: string, params: {
+    view_id?: string;
+    filter?: string;
+    sort?: string;
+    field_names?: string;
+    text_field_as_array?: boolean;
+    user_id_type?: "user_id" | "union_id" | "open_id";
+    display_formula_ref?: boolean;
+    automatic_fields?: boolean;
+    page_token?: string;
+    page_size?: number;
+}) {
     try {
         // 验证环境变量配置
         if (!process.env.LARK_BASE_APP_TOKEN || !process.env.LARK_BASE_PERSONAL_TOKEN) {
