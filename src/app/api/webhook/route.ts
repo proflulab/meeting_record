@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { verifySignature, aesDecrypt } from "@/utils/crypto";
 import { createRecords, updateRecords, searchRecords } from '@/utils/bitable';
-import { getmeetFile } from '@/utils/meeting';
+import { getmeetFile } from '@/utils/meeting_proxy';
 import { fetchTextFromUrl } from '@/utils/file';  // 添加这行
 
 
@@ -119,7 +119,11 @@ export async function POST(request: NextRequest) {
                 const search_result = await searchRecords(tableId, params);
                 if (search_result?.total && search_result.total > 0) {
                     console.log('记录已存在，无需创建！');
-                    return;
+                    // 7. 返回成功响应
+                    return new Response("successfully received callback", {
+                        status: 200,
+                        headers: { "Content-Type": "text/plain" },
+                    });
                 }
 
                 // 创建记录数据字段数据
