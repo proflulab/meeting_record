@@ -122,8 +122,6 @@ export async function POST(request: NextRequest) {
 
                     // 只有当会议类型为1时才更新sub_meeting_id
                     if (meetingInfo.meeting_type === 1) {
-                        // 从会议开始时间提取时分秒
-                        let timeFromMeeting = "";
                         if (meetingInfo.start_time) {
                             // 从会议开始时间提取时分秒
                             let timeFromMeeting = "";
