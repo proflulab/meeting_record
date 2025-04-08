@@ -29,6 +29,51 @@ interface RecordingDetail {
     meeting_record_name?: string;
 }
 
+
+// 新增录制文件对象接口
+interface RecordFile {
+    record_file_id: string;
+    record_start_time: number;
+    record_end_time: number;
+    record_size: number;
+    sharing_state: number;
+    sharing_url?: string;
+    required_same_corp?: boolean;
+    required_participant?: boolean;
+    password?: string;
+    sharing_expire?: number;
+    view_address?: string;
+    allow_download?: boolean;
+    download_address?: string;
+}
+
+// 新增会议录制对象接口
+interface RecordMeeting {
+    meeting_record_id: string;
+    meeting_id: string;
+    meeting_code: string;
+    userid: string;
+    media_start_time: number;
+    subject: string;
+    state: number;
+    record_files?: RecordFile[];
+}
+
+// 新增会议录制列表响应接口
+interface RecordMeetingsResponse {
+    total_count: number;
+    current_size: number;
+    current_page: number;
+    total_page: number;
+    record_meetings?: RecordMeeting[];
+    error_info?: {
+        error_code: number;
+        new_error_code?: number;
+        message: string;
+    };
+}
+
+
 /**
  * 生成腾讯会议API请求签名
  * @param secretKey 密钥
@@ -125,6 +170,406 @@ export async function getmeetFile(fileId: string, userId: string): Promise<Recor
         return responseData as RecordingDetail;
     } catch (error) {
         console.error('获取录制文件详情失败:', error);
+        throw error;
+    }
+}
+
+
+/**
+ * 获取账户级会议录制列表
+ * @param startTime 查询起始时间戳（单位秒）
+ * @param endTime 查询结束时间戳（单位秒）
+ * @param pageSize 分页大小，默认10，最大20
+ * @param page 页码，从1开始，默认1
+ * @returns 会议录制列表响应
+ */
+export async function getCorpRecords(
+    startTime: number,
+    endTime: number,
+    pageSize: number = 10,
+    page: number = 1,
+    operator_id: string = process.env.TEST_USER_ID || '',
+    operator_id_type: number = 1
+): Promise<RecordMeetingsResponse> {
+    try {
+        // 验证时间区间不超过31天
+        if (endTime - startTime > 31 * 24 * 60 * 60) {
+            throw new Error('时间区间不允许超过31天');
+        }
+
+        // 验证分页参数
+        if (pageSize > 20) {
+            pageSize = 20; // 限制最大分页大小为20
+        }
+
+        const requestUri = `/v1/corp/records?start_time=${startTime}&end_time=${endTime}&page_size=${pageSize}&page=${page}&operator_id=${operator_id}&operator_id_type=${operator_id_type}`;
+        const apiUrl = `https://api.meeting.qq.com${requestUri}`;
+
+        // 1. 准备请求头参数
+        const timestamp = Math.floor(Date.now() / 1000).toString();
+        const nonce = Math.floor(Math.random() * 100000).toString();
+        const secretId = process.env.TENCENT_MEETING_SECRET_ID || '';
+        const secretKey = process.env.TENCENT_MEETING_SECRET_KEY || '';
+
+        // 2. 生成签名
+        const signature = generateSignature(
+            secretKey,
+            'GET',
+            secretId,
+            nonce,
+            timestamp,
+            requestUri,
+            ''
+        );
+
+        // 3. 发送请求
+        const response = await fetch(apiUrl, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-TC-Key': secretId,
+                'X-TC-Timestamp': timestamp,
+                'X-TC-Nonce': nonce,
+                'X-TC-Signature': signature,
+                'AppId': process.env.TENCENT_MEETING_APP_ID || '',
+                'SdkId': process.env.TENCENT_MEETING_SDK_ID || '',
+                'X-TC-Registered': '1'
+            }
+        });
+
+        const responseData = await response.json();
+
+        // 4. 检查错误信息
+        if (responseData.error_info) {
+            const errorInfo = responseData.error_info;
+            console.error('获取会议录制列表失败:', {
+                错误码: errorInfo.error_code,
+                新错误码: errorInfo.new_error_code,
+                错误信息: errorInfo.message,
+                请求URI: requestUri,
+                时间戳: timestamp
+            });
+
+            // 特殊处理IP白名单错误
+            if (errorInfo.error_code === 500125) {
+                throw new Error(`IP白名单错误: ${errorInfo.message}\n请确保已在腾讯会议应用配置中添加当前服务器IP到白名单。`);
+            }
+
+            throw new Error(`API请求失败: ${errorInfo.message} (错误码: ${errorInfo.error_code})`);
+        }
+
+        return responseData as RecordMeetingsResponse;
+    } catch (error) {
+        console.error('获取会议录制列表失败:', error);
+        throw error;
+    }
+}
+
+
+// 会议主持人接口
+interface MeetingHost {
+    userid: string;
+    operator_id: string;
+    operator_id_type: number;
+}
+
+// 会议参与者接口
+interface MeetingParticipant {
+    userid: string;
+    operator_id: string;
+    operator_id_type: number;
+}
+
+// 会议设置接口
+interface MeetingSettings {
+    mute_enable_join: boolean;
+    allow_unmute_self: boolean;
+    allow_in_before_host: boolean;
+    auto_in_waiting_room: boolean;
+    allow_screen_shared_watermark: boolean;
+    water_mark_type: number;
+    only_allow_enterprise_user_join: boolean;
+    auto_record_type?: string;
+    participant_join_auto_record?: boolean;
+    enable_host_pause_auto_record?: boolean;
+    only_enterprise_user_allowed?: boolean;
+    allow_multi_device?: boolean;
+    change_nickname?: number;
+    only_user_join_type?: number;
+    mute_enable_type_join?: number;
+}
+
+// 直播配置接口
+interface LiveConfig {
+    live_subject: string;
+    live_summary: string;
+    live_password: string;
+    enable_live_im: boolean;
+    enable_live_replay: boolean;
+    live_addr: string;
+    live_watermark: {
+        watermark_opt: number;
+    };
+    enable_live: boolean;
+}
+
+// 周期性会议规则接口
+interface RecurringRule {
+    recurring_type: number;
+    until_type: number;
+    until_count: number;
+    customized_recurring_type?: number;
+    customized_recurring_step?: number;
+    customized_recurring_days?: number;
+}
+
+// 子会议接口
+interface SubMeeting {
+    sub_meeting_id: string;
+    status: number;
+    start_time: string;
+    end_time: string;
+}
+
+// 会议详情接口
+interface MeetingDetail {
+    subject: string;
+    meeting_id: string;
+    meeting_code: string;
+    status: string;
+    type: number;
+    join_url: string;
+    hosts: MeetingHost[];
+    participants: MeetingParticipant[];
+    start_time: string;
+    end_time: string;
+    settings: MeetingSettings;
+    meeting_type: number;
+    recurring_rule?: RecurringRule;
+    sub_meetings?: SubMeeting[];
+    has_more_sub_meeting?: number;
+    remain_sub_meetings?: number;
+    current_sub_meeting_id?: string;
+    enable_live?: boolean;
+    live_config?: LiveConfig;
+    enable_doc_upload_permission?: boolean;
+    has_vote?: boolean;
+    current_hosts?: MeetingHost[];
+    live_push_addr?: string[];
+    location?: string;
+    enable_enroll?: boolean;
+    enable_host_key?: boolean;
+    time_zone?: string;
+    sync_to_wework?: boolean;
+    disable_invitation?: number;
+}
+
+// 会议详情响应接口
+interface MeetingDetailResponse {
+    meeting_number: number;
+    meeting_info_list: MeetingDetail[];
+    error_info?: {
+        error_code: number;
+        new_error_code?: number;
+        message: string;
+    };
+}
+
+/**
+ * 获取会议详情
+ * @param meetingId 会议ID
+ * @param userId 用户ID
+ * @param instanceId 实例ID，默认为1
+ * @returns 会议详情响应
+ */
+export async function getMeetingDetail(
+    meetingId: string,
+    userId: string,
+    instanceId: string = "1"
+): Promise<MeetingDetailResponse> {
+    try {
+        const requestUri = `/v1/meetings/${meetingId}?userid=${userId}&instanceid=${instanceId}`;
+        const apiUrl = `https://api.meeting.qq.com${requestUri}`;
+
+        // 1. 准备请求头参数
+        const timestamp = Math.floor(Date.now() / 1000).toString();
+        const nonce = Math.floor(Math.random() * 100000).toString();
+        const secretId = process.env.TENCENT_MEETING_SECRET_ID || '';
+        const secretKey = process.env.TENCENT_MEETING_SECRET_KEY || '';
+
+        // 2. 生成签名
+        const signature = generateSignature(
+            secretKey,
+            'GET',
+            secretId,
+            nonce,
+            timestamp,
+            requestUri,
+            ''
+        );
+
+        // 3. 发送请求
+        const response = await fetch(apiUrl, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-TC-Key': secretId,
+                'X-TC-Timestamp': timestamp,
+                'X-TC-Nonce': nonce,
+                'X-TC-Signature': signature,
+                'AppId': process.env.TENCENT_MEETING_APP_ID || '',
+                'SdkId': process.env.TENCENT_MEETING_SDK_ID || '',
+                'X-TC-Registered': '1'
+            }
+        });
+
+        const responseData = await response.json();
+
+        // 4. 检查错误信息
+        if (responseData.error_info) {
+            const errorInfo = responseData.error_info;
+            console.error('获取会议详情失败:', {
+                错误码: errorInfo.error_code,
+                新错误码: errorInfo.new_error_code,
+                错误信息: errorInfo.message,
+                请求URI: requestUri,
+                时间戳: timestamp
+            });
+
+            // 特殊处理IP白名单错误
+            if (errorInfo.error_code === 500125) {
+                throw new Error(`IP白名单错误: ${errorInfo.message}\n请确保已在腾讯会议应用配置中添加当前服务器IP到白名单。`);
+            }
+
+            throw new Error(`API请求失败: ${errorInfo.message} (错误码: ${errorInfo.error_code})`);
+        }
+
+        return responseData as MeetingDetailResponse;
+    } catch (error) {
+        console.error('获取会议详情失败:', error);
+        throw error;
+    }
+}
+
+
+// 参会成员接口
+interface MeetingParticipantDetail {
+    userid: string;
+    uuid: string;
+    user_name: string;
+    phone: string;
+    join_time: string;
+    left_time: string;
+    instanceid: number;
+    user_role: number;
+    ip: string;
+    location: string;
+    link_type: string;
+    join_type: number;
+    net: string;
+    app_version: string;
+    audio_state: boolean;
+    video_state: boolean;
+    screen_shared_state: boolean;
+    webinar_member_role: number;
+    ms_open_id: string;
+    open_id: string;
+    customer_data: string;
+    is_enterprise_user: boolean;
+    tm_corpid: string;
+    avatar_url: string;
+}
+
+// 参会成员列表响应接口
+interface MeetingParticipantsResponse {
+    meeting_id: string;
+    meeting_code: string;
+    subject: string;
+    schedule_start_time: string;
+    schedule_end_time: string;
+    participants: MeetingParticipantDetail[];
+    has_remaining: boolean;
+    next_pos: number;
+    total_count: number;
+    error_info?: {
+        error_code: number;
+        new_error_code?: number;
+        message: string;
+    };
+}
+
+/**
+ * 获取会议参会成员列表
+ * @param meetingId 会议ID
+ * @param userId 用户ID
+ * @param subMeetingId 子会议ID
+ * @returns 参会成员列表响应
+ */
+export async function getMeetingParticipants(
+    meetingId: string,
+    userId: string,
+    subMeetingId: string
+): Promise<MeetingParticipantsResponse> {
+    try {
+        const requestUri = `/v1/meetings/${meetingId}/participants?sub_meeting_id=${subMeetingId}&userid=${userId}`;
+        const apiUrl = `https://api.meeting.qq.com${requestUri}`;
+
+        // 1. 准备请求头参数
+        const timestamp = Math.floor(Date.now() / 1000).toString();
+        const nonce = Math.floor(Math.random() * 100000).toString();
+        const secretId = process.env.TENCENT_MEETING_SECRET_ID || '';
+        const secretKey = process.env.TENCENT_MEETING_SECRET_KEY || '';
+
+        // 2. 生成签名
+        const signature = generateSignature(
+            secretKey,
+            'GET',
+            secretId,
+            nonce,
+            timestamp,
+            requestUri,
+            ''
+        );
+
+        // 3. 发送请求
+        const response = await fetch(apiUrl, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-TC-Key': secretId,
+                'X-TC-Timestamp': timestamp,
+                'X-TC-Nonce': nonce,
+                'X-TC-Signature': signature,
+                'AppId': process.env.TENCENT_MEETING_APP_ID || '',
+                'SdkId': process.env.TENCENT_MEETING_SDK_ID || '',
+                'X-TC-Registered': '1'
+            }
+        });
+
+        const responseData = await response.json();
+
+        // 4. 检查错误信息
+        if (responseData.error_info) {
+            const errorInfo = responseData.error_info;
+            console.error('获取会议参会成员列表失败:', {
+                错误码: errorInfo.error_code,
+                新错误码: errorInfo.new_error_code,
+                错误信息: errorInfo.message,
+                请求URI: requestUri,
+                时间戳: timestamp
+            });
+
+            // 特殊处理IP白名单错误
+            if (errorInfo.error_code === 500125) {
+                throw new Error(`IP白名单错误: ${errorInfo.message}\n请确保已在腾讯会议应用配置中添加当前服务器IP到白名单。`);
+            }
+
+            throw new Error(`API请求失败: ${errorInfo.message} (错误码: ${errorInfo.error_code})`);
+        }
+
+        return responseData as MeetingParticipantsResponse;
+    } catch (error) {
+        console.error('获取会议参会成员列表失败:', error);
         throw error;
     }
 }
