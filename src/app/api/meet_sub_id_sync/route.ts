@@ -2,7 +2,7 @@
  * @Author: 杨仕明 shiming.y@qq.com
  * @Date: 2025-04-08 10:00:00
  * @LastEditors: 杨仕明 shiming.y@qq.com
- * @LastEditTime: 2025-04-07 21:14:30
+ * @LastEditTime: 2025-04-08 17:23:19
  * @FilePath: /meeting_record/src/app/api/meet_sub_id_sync/route.ts
  * @Description: 会议详情同步接口
  */
@@ -17,7 +17,7 @@ interface SyncResponse {
     total_processed: number;
     updated_records: number;
     error?: string;
-    details?: any;
+    details?: Record<string, unknown>;
 }
 
 /**
@@ -114,9 +114,17 @@ export async function POST(request: NextRequest) {
                     const recordInfo = recordsMap.get(recordId);
 
 
-                    let updateFields: any = {
+                    interface UpdateFields {
+                        meeting_code: string;
+                        meeting_type: number;
+                        sub_meeting_id: string;
+                        [key: string]: string | number;
+                    }
+
+                    const updateFields: UpdateFields = {
                         meeting_code: meetingInfo.meeting_code || "",
-                        meeting_type: meetingInfo.meeting_type ?? undefined
+                        meeting_type: meetingInfo.meeting_type || 0,
+                        sub_meeting_id: ""
                     };
 
 
@@ -182,9 +190,8 @@ export async function POST(request: NextRequest) {
         }
 
         // 3. 批量更新记录
-        let updateResult = null;
         if (updateRecordsData.length > 0) {
-            updateResult = await batchUpdateRecords(tableId, updateRecordsData);
+            await batchUpdateRecords(tableId, updateRecordsData);
             console.log(`成功更新 ${updateRecordsData.length} 条记录`);
         } else {
             console.log('没有需要更新的记录');
