@@ -19,7 +19,7 @@ interface SyncResponse {
     total_processed: number;
     updated_records: number;
     error?: string;
-    details?: any;
+    details?: Record<string, unknown>;
 }
 
 /**
@@ -113,9 +113,8 @@ export async function POST(request: NextRequest) {
         }
 
         // 3. 批量更新记录
-        let updateResult = null;
         if (updateRecordsData.length > 0) {
-            updateResult = await batchUpdateRecords(tableId, updateRecordsData);
+            await batchUpdateRecords(tableId, updateRecordsData);
             console.log(`成功更新 ${updateRecordsData.length} 条记录`);
         } else {
             console.log('没有需要更新的记录');

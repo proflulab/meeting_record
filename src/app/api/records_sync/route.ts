@@ -8,7 +8,7 @@ interface SyncResponse {
     total_found: number;
     new_records: number;
     error?: string;
-    details?: any;
+    details?: Record<string, unknown>;
 }
 
 /**
