@@ -2,7 +2,7 @@
  * @Author: 杨仕明 shiming.y@qq.com
  * @Date: 2025-03-11 00:58:49
  * @LastEditors: 杨仕明 shiming.y@qq.com
- * @LastEditTime: 2025-03-13 01:26:21
+ * @LastEditTime: 2025-04-07 21:00:21
  * @FilePath: /meeting_record/src/utils/__tests__/bitable.test.ts
  * @Description: 
  * 
@@ -23,7 +23,7 @@ describe('createRecords', () => {
     it('应该成功创建记录并返回结果', async () => {
         try {
             // 创建测试数据
-            const testTableId = 'tbl4EkvHwDU3olD7';
+            const testTableId = 'tbl4EkvHwDU3ol';
             // 创建测试记录数据
             const testRecord = {
                 user_name: "测试标题",
