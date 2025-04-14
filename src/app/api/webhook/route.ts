@@ -108,11 +108,13 @@ export async function POST(request: NextRequest) {
 
                 const tableId = 'tbl4EkvHwDU3olD7';
                 const meetingId = payload.meeting_info.meeting_id;
+                const meetingCode = payload.meeting_info.meeting_code;
+                const meetingType = payload.meeting_info.meeting_type;
                 const fileId = payload.recording_files[0].record_file_id;
                 const userId = payload.meeting_info.creator.userid;
                 const userName = payload.meeting_info.creator.user_name;
 
-                // 根据meetingI查询记录是否存在，如果不存在，则创建记录
+                // 根据fileId查询记录是否存在，如果不存在，则创建记录
                 const params = {
                     filter: `CurrentValue.[record_file_id]="${fileId}"`,
                 };
@@ -129,6 +131,8 @@ export async function POST(request: NextRequest) {
                 // 创建记录数据字段数据
                 const testRecord = {
                     meeting_id: meetingId,
+                    meeting_code: meetingCode,
+                    meeting_type: meetingType,
                     start_time: payload.meeting_info.start_time * 1000,
                     end_time: payload.meeting_info.end_time * 1000,
                     meeting_name: payload.meeting_info.subject,
@@ -147,18 +151,28 @@ export async function POST(request: NextRequest) {
                     throw new Error('无法获取记录ID，record_result可能未包含预期的数据结构');
                 }
 
-                const fileAddress = meetfile_result.meeting_summary?.find(
+                const summaryAddress = meetfile_result.meeting_summary?.find(
+                    (item) => item.file_type === "txt"
+                )?.download_address;
+                const transcriptsAddress = meetfile_result.ai_meeting_transcripts?.find(
+                    (item) => item.file_type === "txt"
+                )?.download_address;
+                const minutesAddress = meetfile_result.ai_minutes?.find(
                     (item) => item.file_type === "txt"
                 )?.download_address;
 
                 // 尝试获取会议文件内容
-                const fileContent = await fetchTextFromUrl(fileAddress || "")
-                console.log('Meeting file content:', fileContent);
+                const summaryfileContent = await fetchTextFromUrl(summaryAddress || "")
+                const transcriptsfileContent = await fetchTextFromUrl(transcriptsAddress || "")
+                const minutesfileContent = await fetchTextFromUrl(minutesAddress || "")
+                console.log('Meeting file content:', summaryfileContent);
 
                 // 使用record_id更新记录
                 await updateRecords(tableId, recordId, {
                     // 这里添加需要更新的字段
-                    meeting_summary: fileContent || ""
+                    meeting_summary: summaryfileContent || "",
+                    ai_meeting_transcripts: transcriptsfileContent || "",
+                    ai_minutes: minutesfileContent || "",
                 });
                 break;
             default:
