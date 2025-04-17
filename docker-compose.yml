@@ -1,0 +1,11 @@
+version: "3.8"
+
+services:
+  lulab-meeting:
+    image: lulab-meeting_record
+    build: .
+    ports:
+      - "3080:3000"
+    env_file:
+      - .env.local
+    restart: unless-stopped
