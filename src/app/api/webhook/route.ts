@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { verifySignature, aesDecrypt } from "@/utils/crypto";
 import { createRecords, updateRecords, searchRecords } from '@/utils/bitable';
-import { getmeetFile } from '@/utils/meeting';
+import { getmeetFile, getMeetingParticipants } from '@/utils/meeting';
 import { fetchTextFromUrl } from '@/utils/file';  // 添加这行
 
 
@@ -169,6 +169,7 @@ export async function POST(request: NextRequest) {
                     const transcriptsfileContent = await fetchTextFromUrl(transcriptsAddress || "");
                     const minutesfileContent = await fetchTextFromUrl(minutesAddress || "");
                     console.log(`文件ID: ${record_file_id} 的内容已获取`);
+
                     // 更新记录
                     await updateRecords(tableId, recordId, {
                         meeting_summary: summaryfileContent || "",
@@ -176,6 +177,32 @@ export async function POST(request: NextRequest) {
                         ai_minutes: minutesfileContent || "",
                     });
                     console.log(`文件ID: ${record_file_id} 的记录已更新`);
+
+                    // 获取会议参会者列表
+                    const participantsData = await getMeetingParticipants(String(meeting_id), String(userid), String(sub_meeting_id));
+
+                    if (!participantsData || !participantsData.participants || participantsData.participants.length === 0) {
+                        console.log(`会议ID ${meeting_id} 没有参会者信息`);
+                        continue;
+                    }
+
+                    // 解码参会者名称并提取为数组
+                    const participantNames = [...new Set(participantsData.participants.map(participant => {
+                        try {
+                            // Base64解码
+                            const decodedName = Buffer.from(participant.user_name, 'base64').toString('utf-8');
+                            return decodedName;
+                        } catch (error) {
+                            console.error(`解码参会者名称失败: ${participant.user_name}`, error);
+                            return participant.user_name; // 如果解码失败，返回原始值
+                        }
+                    }))];
+
+                    // 更新记录-参会者
+                    await updateRecords(tableId, recordId, {
+                        participants: String(participantNames),
+                    });
+
                 }
                 console.log('所有录制文件处理完成');
                 break;
