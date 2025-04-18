@@ -1,0 +1,33 @@
+{
+    "event": "recording.completed",
+    "trace_id": "e7aa65dd-f7e6-4b62-912c-2035173b34a9",
+    "payload": [
+        {
+            "operate_time": 1609313201465,
+            "operator": {
+                "userid": "tester",
+                "user_name": "tester_name"
+            },
+            "meeting_info": {
+                "meeting_id": "13339451618278424869",
+                "meeting_code": "445999969",
+                "subject": "tester的快速会议",
+                "creator": {
+                    "userid": "tester-2",
+                    "user_name": "tester-2_name"
+                },
+                "meeting_type": 0,
+                "start_time": 1608522626,
+                "end_time": 1609415039
+            },
+            "recording_files": [
+                {
+                    "record_file_id": "123242525"
+                },
+                {
+                    "record_file_id": "123242525"
+                }
+            ]
+        }
+    ]
+}
