@@ -1,0 +1,40 @@
+{
+    "event": "recording.completed",
+    "trace_id": "5ad52ffc-5c55-4f44-a40b-f06d6ae26076",
+    "payload": [
+        {
+            "operate_time": 1744896657416,
+            "operator": {
+                "instance_id": "2"
+            },
+            "meeting_info": {
+                "meeting_id": "691766354366769",
+                "meeting_code": "63467987479",
+                "subject": "AI项目基础俱乐部",
+                "creator": {
+                    "userid": "woaJARCQAAvMwXKrKbaQm5gWOTfegL_A",
+                    "user_name": "张某",
+                    "uuid": "WMfLPWHwZUSr",
+                    "instance_id": "1",
+                    "ms_open_id": "m5fhuihfapurheoqrhquhomGHUKMFw=="
+                },
+                "meeting_type": 1,
+                "sub_meeting_id": "1744891200",
+                "start_time": 1744890548,
+                "end_time": 1744896657,
+                "sub_meeting_start_time": 1744891200,
+                "sub_meeting_end_time": 1744894800,
+                "media_set_type": 1,
+                "meeting_id_type": 0
+            },
+            "recording_files": [
+                {
+                    "record_file_id": "1912346542655362477"
+                },
+                {
+                    "record_file_id": "191652624673456625"
+                }
+            ]
+        }
+    ]
+}
