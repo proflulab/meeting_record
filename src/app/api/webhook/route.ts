@@ -8,6 +8,7 @@ import { fetchTextFromUrl } from '@/utils/file';  // 添加这行
 // 配置信息，实际应用中应从环境变量获取
 const TOKEN = process.env.TENCENT_MEETING_TOKEN || "";
 const ENCODING_AES_KEY = process.env.TENCENT_MEETING_ENCODING_AES_KEY || "";
+const LARK_TABLE_ID = process.env.LARK_TABLE_ID || "";
 
 /**
  * GET请求处理 - 用于URL有效性验证
@@ -104,7 +105,7 @@ export async function POST(request: NextRequest) {
         switch (eventData.event) {
             case "recording.completed":
                 // 处理云录制完成事件
-                const tableId = 'tbl4EkvHwDU3olD7';
+                const tableId = LARK_TABLE_ID;
                 const payload = eventData.payload[0];
                 const meetingInfo = payload.meeting_info;
                 const {
