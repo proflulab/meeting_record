@@ -511,7 +511,10 @@ export async function getMeetingParticipants(
     subMeetingId: string
 ): Promise<MeetingParticipantsResponse> {
     try {
-        const requestUri = `/v1/meetings/${meetingId}/participants?sub_meeting_id=${subMeetingId}&userid=${userId}`;
+        // 根据 subMeetingId 是否为空来构建 requestUri
+        const requestUri = subMeetingId
+            ? `/v1/meetings/${meetingId}/participants?sub_meeting_id=${subMeetingId}&userid=${userId}`
+            : `/v1/meetings/${meetingId}/participants?userid=${userId}`;
         const apiUrl = `https://api.meeting.qq.com${requestUri}`;
 
         // 1. 准备请求头参数
