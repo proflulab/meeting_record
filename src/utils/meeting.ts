@@ -511,11 +511,14 @@ export async function getMeetingParticipants(
     subMeetingId: string
 ): Promise<MeetingParticipantsResponse> {
     try {
-        // 根据 subMeetingId 是否为空来构建 requestUri
-        const requestUri = subMeetingId
-            ? `/v1/meetings/${meetingId}/participants?sub_meeting_id=${subMeetingId}&userid=${userId}`
-            : `/v1/meetings/${meetingId}/participants?userid=${userId}`;
+
+        console.log('subMeetingId:', subMeetingId);
+        // 构建 requestUri
+        const requestUri = `/v1/meetings/${meetingId}/participants?userid=${userId}`
+            + (subMeetingId ? `&sub_meeting_id=${subMeetingId}` : '');
         const apiUrl = `https://api.meeting.qq.com${requestUri}`;
+
+        console.log('apiUrl:', apiUrl);
 
         // 1. 准备请求头参数
         const timestamp = Math.floor(Date.now() / 1000).toString();
