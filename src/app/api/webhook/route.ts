@@ -179,7 +179,7 @@ export async function POST(request: NextRequest) {
                     console.log(`文件ID: ${record_file_id} 的记录已更新`);
 
                     // 获取会议参会者列表
-                    const participantsData = await getMeetingParticipants(String(meeting_id), String(userid), String(sub_meeting_id));
+                    const participantsData = await getMeetingParticipants(String(meeting_id), String(userid), sub_meeting_id);
 
                     if (!participantsData || !participantsData.participants || participantsData.participants.length === 0) {
                         console.log(`会议ID ${meeting_id} 没有参会者信息`);
