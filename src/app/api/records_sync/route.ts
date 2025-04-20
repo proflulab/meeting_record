@@ -1,6 +1,10 @@
 import { NextRequest } from "next/server";
 import { getCorpRecords } from "@/utils/meeting";
-import { searchRecords, batchCreateRecords } from "@/utils/bitable";
+import { batchCreateRecords } from "@/utils/bitable";
+import { searchRecordsWithIterator } from "@/utils/lark";
+
+// 配置信息，实际应用中应从环境变量获取
+const LARK_BASE_APP_TOKEN = process.env.LARK_BASE_APP_TOKEN || "";
 
 // 定义接口响应类型
 interface SyncResponse {
@@ -45,6 +49,7 @@ export async function POST(request: NextRequest) {
             meeting_id: string;
             userid: string;
             subject: string;
+            meeting_code: string;
         }> = [];
 
         // 分批请求数据（每批31天）
@@ -73,7 +78,8 @@ export async function POST(request: NextRequest) {
                                     record_end_time: file.record_end_time,
                                     meeting_id: meeting.meeting_id,
                                     userid: meeting.userid,
-                                    subject: meeting.subject
+                                    subject: meeting.subject,
+                                    meeting_code: meeting.meeting_code,
                                 });
                             }
                         }
@@ -92,21 +98,32 @@ export async function POST(request: NextRequest) {
         console.log(`共找到 ${allRecordings.length} 条会议录制记录`);
 
         // 查询飞书多维表格中已有的记录
-        const existingRecords = await searchRecords(tableId, {
-            page_size: 500, // 假设不会超过1000条记录，实际应用中可能需要分页处理
-        });
+        // const existingRecords = await searchRecords(tableId, {
+        //     page_size: 500, // 假设不会超过1000条记录，实际应用中可能需要分页处理
+        // });
+
+        const existingRecords = await searchRecordsWithIterator(LARK_BASE_APP_TOKEN, tableId, 500);
 
         // 提取已有记录的 record_file_id
         const existingFileIds = new Set<string>();
-        if (existingRecords?.items && existingRecords.items.length > 0) {
-            for (const item of existingRecords.items) {
-                if (item.fields.record_file_id) {
-                    existingFileIds.add(item.fields.record_file_id as string);
+        if (existingRecords.length > 0) {
+            for (const item of existingRecords) {
+                const recordFileId = item.fields.record_file_id;
+                if (Array.isArray(recordFileId)) {
+                    // 假设 record_file_id 是对象数组，提取其中的 text 属性
+                    const fileIds = (recordFileId as { text: string }[]).map((file) => file.text);
+                    fileIds.forEach((id: string) => existingFileIds.add(id));
+                } else if (typeof recordFileId === 'string') {
+                    // 如果 record_file_id 是字符串，直接添加
+                    existingFileIds.add(recordFileId);
                 }
             }
         }
 
         console.log(`飞书多维表格中已有 ${existingFileIds.size} 条记录`);
+
+        console.log(`第一个会议录制记录例子:`, JSON.stringify(allRecordings[0], null, 2));
+        console.log(`已有记录的文件ID集合:`, JSON.stringify(Array.from(existingFileIds), null, 2));
 
         // 过滤出未记录的会议录制
         const newRecordings = allRecordings.filter(recording =>
@@ -126,7 +143,8 @@ export async function POST(request: NextRequest) {
                     end_time: recording.record_end_time,
                     meeting_name: recording.subject,
                     userid: recording.userid,
-                    record_file_id: recording.record_file_id
+                    record_file_id: recording.record_file_id,
+                    meeting_code: recording.meeting_code,
                 }));
 
                 // 批量创建记录
