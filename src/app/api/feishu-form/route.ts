@@ -69,6 +69,48 @@ function compareDataChanges(oldItems: any[], newItems: any[]) {
                     console.log('    ⬆️  新值:', JSON.stringify(fieldChange.newValue, null, 2));
                 });
             }
+            // --- Notify feishu-fill API for each change --- 
+            let notificationPayload: { type: 'new' | 'modified', record_id: string, fields: Record<string, any> };
+            if (change.type === 'new') {
+                notificationPayload = {
+                    type: 'new',
+                    record_id: change.record.record_id,
+                    fields: change.record.fields
+                };
+            } else { // modified
+                 const changedFields = change.changes?.reduce((acc, curr) => {
+                     acc[curr.field] = curr.newValue;
+                     return acc;
+                 }, {} as Record<string, any>) || {}; // Ensure changedFields is an object
+
+                 // Ensure the unique identifier field is always included for lookup in feishu-fill
+                 const uniqueIdFieldName = process.env.LARK_UNIQUE_ID_FIELD_NAME;
+                 if (uniqueIdFieldName && change.record.fields[uniqueIdFieldName] !== undefined && changedFields[uniqueIdFieldName] === undefined) {
+                    changedFields[uniqueIdFieldName] = change.record.fields[uniqueIdFieldName];
+                    console.log(` LARK_UNIQUE_ID_FIELD_NAME: ${uniqueIdFieldName}, value: ${change.record.fields[uniqueIdFieldName]}`);
+                    console.log(`📋 [通知] 为确保查找，已将未变更的唯一标识符 '${uniqueIdFieldName}' 添加到更新负载中。`);
+                 }
+
+                 notificationPayload = {
+                     type: 'modified',
+                     record_id: change.record.record_id,
+                     fields: changedFields
+                 };
+            }
+
+            console.log(`
+⏳ [通知填充服务] 记录 ${notificationPayload.record_id} (${notificationPayload.type})`);
+            const notifyStartTime = Date.now();
+            // Pass the new payload structure
+            notifyFeishuFill(notificationPayload).then(() => {
+                const duration = Date.now() - notifyStartTime;
+                console.log(`✅ [通知成功] 记录 ${notificationPayload.record_id} (${notificationPayload.type}) 已发送至 /api/feishu-fill，耗时 ${duration}ms`);
+            }).catch(notifyError => {
+                const duration = Date.now() - notifyStartTime;
+                console.error(`❌ [通知失败] 记录 ${notificationPayload.record_id} (${notificationPayload.type}) 发送至 /api/feishu-fill 失败，耗时 ${duration}ms`);
+                console.error('   错误详情:', notifyError.message || notifyError);
+            });
+            // --------------------------------------------- 
         });
         console.log('\n📊 ----------------------------------------');
         console.log(`✅ 共发现 ${changes.length} 条变更记录`);
@@ -77,6 +119,140 @@ function compareDataChanges(oldItems: any[], newItems: any[]) {
     }
     console.log('\n==================== 数据比对结束 ====================\n');
 }
+
+// --- Function to notify feishu-fill API --- 
+// Updated signature to reflect the new payload structure
+async function notifyFeishuFill(payload: { type: 'new' | 'modified', record_id: string, fields: Record<string, any> }) {
+    // Construct the full URL for the API route
+    // Assumes the API route is running on the same origin
+    // Default to the current dev server port 3002 if NEXT_PUBLIC_APP_URL is not set
+    const fillApiUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3002'}/api/feishu-fill`; 
+    console.log(`🚀 [通知] 准备向 ${fillApiUrl} 发送 POST 请求`);
+    // Log the new payload structure
+    console.log('📋 [通知] 发送数据:', JSON.stringify(payload, null, 2));
+
+    try {
+        const response = await fetch(fillApiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                // Add any necessary authentication headers if feishu-fill requires them
+            },
+            // Send the new payload structure
+            body: JSON.stringify(payload),
+        });
+
+        // Check if the response is JSON before trying to parse
+        const contentType = response.headers.get('content-type');
+        let responseData: any;
+        if (contentType && contentType.includes('application/json')) {
+             responseData = await response.json();
+        } else {
+             responseData = await response.text(); // Handle non-JSON responses
+        }
+
+
+        if (!response.ok) {
+            console.error(`❌ [通知] 调用 ${fillApiUrl} 失败:`, {
+                status: response.status,
+                statusText: response.statusText,
+                responseData: responseData
+            });
+            // Provide a more informative error message
+            const errorDetails = typeof responseData === 'string' ? responseData : JSON.stringify(responseData);
+            throw new Error(`调用填充服务失败: ${response.status} ${response.statusText} - ${errorDetails}`);
+        }
+
+        console.log(`✅ [通知] 调用 ${fillApiUrl} 成功:`, {
+            status: response.status,
+            responseData: responseData
+        });
+        return responseData;
+    } catch (error) {
+        console.error(`❌ [通知] 调用 ${fillApiUrl} 时发生网络或处理错误:`, error);
+        // Ensure the error is propagated correctly
+        if (error instanceof Error) {
+             throw error;
+        } else {
+             throw new Error(String(error));
+        }
+    }
+}
+// ----------------------------------------
+
+// --- Function to sync changes to the target table --- 
+// Note: This function is no longer called directly by compareDataChanges in the primary flow.
+// It's replaced by notifyFeishuFill which triggers the /api/feishu-fill endpoint. 
+async function syncChangeToTargetTable(change: { type: 'new' | 'modified', record: any, changes?: { field: string, oldValue: any, newValue: any }[] }) {
+    const TARGET_APP_TOKEN = process.env.NEXT_PUBLIC_FEISHU_TARGET_APP_TOKEN || process.env.NEXT_PUBLIC_FEISHU_APP_ID; // Use source if target not set
+    const TARGET_TABLE_ID = process.env.NEXT_PUBLIC_FEISHU_TARGET_TABLE_ID; // Needs to be set in .env
+    const FEISHU_ACCESS_TOKEN = process.env.NEXT_PUBLIC_FEISHU_APP_SECRET;
+
+    if (!TARGET_TABLE_ID) {
+        console.error('❌ 同步错误: 目标表格 ID (NEXT_PUBLIC_FEISHU_TARGET_TABLE_ID) 未在环境变量中设置。');
+        throw new Error('Target Table ID is not configured.');
+    }
+
+    let url = '';
+    let method = '';
+    let body: any = {};
+
+    if (change.type === 'new') {
+        // Add new record to target table
+        url = `https://base-api.larksuite.com/open-apis/bitable/v1/apps/${TARGET_APP_TOKEN}/tables/${TARGET_TABLE_ID}/records`;
+        method = 'POST';
+        body = { fields: change.record.fields };
+        console.log(`🔄 [同步] 准备向目标表添加新记录: ${change.record.record_id}`);
+    } else if (change.type === 'modified') {
+        // Update existing record in target table
+        // Assuming record_id is the same or needs mapping if different structure
+        url = `https://base-api.larksuite.com/open-apis/bitable/v1/apps/${TARGET_APP_TOKEN}/tables/${TARGET_TABLE_ID}/records/${change.record.record_id}`;
+        method = 'PUT';
+        body = { fields: change.record.fields }; // Send all fields for simplicity, Feishu handles partial updates
+        console.log(`🔄 [同步] 准备更新目标表记录: ${change.record.record_id}`);
+    }
+
+    if (!url || !method) {
+        console.warn(`⚠️ [同步] 跳过记录 ${change.record.record_id}，无法确定操作类型。`);
+        return { skipped: true, reason: 'Unknown change type' };
+    }
+
+    console.log(`🚀 [同步] 发起 API 请求: ${method} ${url}`);
+    console.log('📋 [同步] 请求体:', JSON.stringify(body, null, 2));
+
+    const response = await fetch(url, {
+        method: method,
+        headers: {
+            'Authorization': `Bearer ${FEISHU_ACCESS_TOKEN}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+    });
+
+    const responseData = await response.json();
+
+    if (!response.ok || responseData.code !== 0) {
+        console.error(`❌ [同步] API 请求失败 (记录 ${change.record.record_id}):`, {
+            status: response.status,
+            statusText: response.statusText,
+            code: responseData.code,
+            msg: responseData.msg,
+            error: responseData.error
+        });
+        throw new Error(`同步失败: ${responseData.msg || response.statusText}`);
+    }
+
+    console.log(`✅ [同步] API 调用成功 (记录 ${change.record.record_id}):`, {
+        status: response.status,
+        code: responseData.code,
+        msg: responseData.msg,
+        data: responseData.data
+    });
+
+    return responseData; // Return the result from Feishu API
+}
+// -----------------------------------------------------
+// Note: syncChangeToTargetTable is kept for potential reference or alternative use cases.
 
 // 获取飞书数据的函数
 async function fetchFeishuData() {
@@ -132,8 +308,6 @@ async function updateCache() {
         if (newData?.data?.items) {
             compareDataChanges(lastDataItems, newData.data.items);
             lastDataItems = newData.data.items;
-            // Trigger update in feishu-fill
-            await updateFeishuFill(newData.data.items);
         }
         
         cachedData = newData;
