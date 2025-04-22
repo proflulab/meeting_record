@@ -2,7 +2,7 @@
  * @Author: 杨仕明 shiming.y@qq.com
  * @Date: 2025-03-21 14:13:42
  * @LastEditors: 杨仕明 shiming.y@qq.com
- * @LastEditTime: 2025-04-20 12:46:15
+ * @LastEditTime: 2025-04-20 17:23:42
  * @FilePath: /meeting_record/src/utils/lark.ts
  * @Description: 飞书API操作工具函数
  */
@@ -203,7 +203,6 @@ export async function getTableRecords(appToken: string, tableId: string, recordI
  * @param appToken 多维表格应用Token
  * @param tableId 表格ID
  * @param filter 搜索过滤条件
- * @param userAccessToken 用户访问令牌
  * @param pageSize 每页记录数，默认20
  * @returns 所有匹配的记录数组
  */
