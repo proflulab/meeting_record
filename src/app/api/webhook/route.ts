@@ -3,12 +3,14 @@ import { verifySignature, aesDecrypt } from "@/utils/crypto";
 import { createRecords, updateRecords, searchRecords } from '@/utils/bitable';
 import { getmeetFile, getMeetingParticipants } from '@/utils/meeting';
 import { fetchTextFromUrl } from '@/utils/file';  // 添加这行
+import * as openaiDeepseek from "@/utils/ai/openai/openai_chat";
 
 
 // 配置信息，实际应用中应从环境变量获取
 const TOKEN = process.env.TENCENT_MEETING_TOKEN || "";
 const ENCODING_AES_KEY = process.env.TENCENT_MEETING_ENCODING_AES_KEY || "";
-const LARK_TABLE_ID = process.env.LARK_TABLE_ID || "";
+const MEET_DATA_TABLE_ID = process.env.MEET_DATA_TABLE_ID || "";
+const NUM_RECORD_TABLE_ID = process.env.NUM_RECORD_TABLE_ID || "";
 
 /**
  * GET请求处理 - 用于URL有效性验证
@@ -105,7 +107,7 @@ export async function POST(request: NextRequest) {
         switch (eventData.event) {
             case "recording.completed":
                 // 处理云录制完成事件
-                const tableId = LARK_TABLE_ID;
+
                 const payload = eventData.payload[0];
                 const meetingInfo = payload.meeting_info;
                 const {
@@ -127,7 +129,7 @@ export async function POST(request: NextRequest) {
                     const params = {
                         filter: `CurrentValue.[record_file_id]="${record_file_id}"`,
                     };
-                    const search_result = await searchRecords(tableId, params);
+                    const search_result = await searchRecords(MEET_DATA_TABLE_ID, params);
                     if (search_result?.total && search_result.total > 0) {
                         console.log(`记录已存在，无需创建！文件ID: ${record_file_id}`);
                         continue;
@@ -146,7 +148,7 @@ export async function POST(request: NextRequest) {
                         userid,
                         record_file_id,
                     };
-                    const record_result = await createRecords(tableId, recordData);
+                    const record_result = await createRecords(MEET_DATA_TABLE_ID, recordData);
                     const meetfile_result = await getmeetFile(record_file_id, userid);
                     const recordId = record_result?.record?.record_id;
                     if (!recordId) {
@@ -171,7 +173,7 @@ export async function POST(request: NextRequest) {
                     console.log(`文件ID: ${record_file_id} 的内容已获取`);
 
                     // 更新记录
-                    await updateRecords(tableId, recordId, {
+                    await updateRecords(MEET_DATA_TABLE_ID, recordId, {
                         meeting_summary: summaryfileContent || "",
                         ai_meeting_transcripts: transcriptsfileContent || "",
                         ai_minutes: minutesfileContent || "",
@@ -199,9 +201,36 @@ export async function POST(request: NextRequest) {
                     }))];
 
                     // 更新记录-参会者
-                    await updateRecords(tableId, recordId, {
+                    await updateRecords(MEET_DATA_TABLE_ID, recordId, {
                         participants: String(participantNames),
                     });
+
+                    console.log(participantNames);
+                    for (const participant of participantNames) {
+                        // 针对每个参会者，调用大模型接口进行项目进度总结
+                        try {
+                            const summary = await openaiDeepseek.chatCompletion({
+                                messages: [
+                                    { role: "system", content: "你是一个会议记录分析助手，专注于为每位参会者总结其在会议中的项目进度。" },
+                                    { role: "user", content: `请根据以下会议内容，针对参会者“${participant}”在本次会议中的项目进度进行简要总结。\n会议内容：${transcriptsfileContent}` }
+                                ],
+                                model: "deepseek-v3-250324"
+                            });
+                            console.log(`参会者 ${participant} 项目进度总结:`, summary);
+                            // 可选：将summary写入数据库或更新记录
+
+                            // 构建记录数据
+                            const recordData2 = {
+                                participant,
+                                关联例会: [recordId],
+                                项目进度总结: summary
+                            };
+                            await createRecords(NUM_RECORD_TABLE_ID, recordData2);
+                        } catch (error) {
+                            console.error(`为参会者 ${participant} 总结项目进度失败:`, error);
+                        }
+                    }
+
 
                 }
                 console.log('所有录制文件处理完成');
