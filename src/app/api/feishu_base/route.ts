@@ -9,9 +9,9 @@
  * Copyright (c) 2025 by ${git_name_email}, All Rights Reserved. 
  */
 import { NextRequest } from "next/server";
-import { updateRecords, searchRecords } from '@/utils/bitable';
-import { getmeetFile } from '@/utils/meeting';
-import { fetchTextFromUrl } from '@/utils/file';  // 添加这行
+import { updateRecords, searchRecords } from '@/utils/lark/bitable/bitable';
+import { getmeetFile } from '@/utils/tencent_meeting/meeting';
+import { fetchTextFromUrl } from '@/utils/lark/bitable/file';  // 添加这行
 
 
 /**

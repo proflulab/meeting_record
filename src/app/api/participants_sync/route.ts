@@ -10,8 +10,8 @@
  */
 
 import { NextRequest } from "next/server";
-import { getMeetingParticipants } from "@/utils/meeting";
-import { searchRecords, batchUpdateRecords } from "@/utils/bitable";
+import { getMeetingParticipants } from "@/utils/tencent_meeting/meeting";
+import { searchRecords, batchUpdateRecords } from "@/utils/lark/bitable/bitable";
 
 // 定义接口响应类型
 interface SyncResponse {
