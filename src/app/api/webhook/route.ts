@@ -1,8 +1,8 @@
 import { NextRequest } from "next/server";
-import { verifySignature, aesDecrypt } from "@/utils/crypto";
-import { createRecords, updateRecords, searchRecords } from '@/utils/bitable';
-import { getmeetFile, getMeetingParticipants } from '@/utils/meeting';
-import { fetchTextFromUrl } from '@/utils/file';  // 添加这行
+import { verifySignature, aesDecrypt } from "@/utils/tencent_meeting/crypto";
+import { createRecords, updateRecords, searchRecords } from '@/utils/lark/bitable/bitable';
+import { getmeetFile, getMeetingParticipants } from '@/utils/tencent_meeting/meeting';
+import { fetchTextFromUrl } from '@/utils/lark/bitable/file';  // 添加这行
 import * as openaiDeepseek from "@/utils/ai/openai/openai_chat";
 
 

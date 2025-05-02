@@ -9,7 +9,7 @@
  * Copyright (c) 2025 by ${git_name_email}, All Rights Reserved. 
  */
 
-import { getmeetFile } from '../meeting_proxy';
+import { getmeetFile } from '../tencent_meeting/meeting_proxy';
 
 describe('getRecordingDetail', () => {
 
