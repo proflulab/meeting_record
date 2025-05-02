@@ -11,7 +11,7 @@
 
 import { NextRequest } from 'next/server'
 
-export async function pickRequestData(req: NextRequest): Promise<Record<string, any>> {
+export async function pickRequestData(req: NextRequest): Promise<Record<string, string | File>> {
     const contentType = req.headers.get('content-type') || ''
     if (contentType.includes('application/json')) {
         return await req.json()
@@ -22,7 +22,7 @@ export async function pickRequestData(req: NextRequest): Promise<Record<string, 
     }
     if (contentType.includes('multipart/form-data')) {
         const form = await req.formData()
-        const obj: Record<string, any> = {}
+        const obj: Record<string, string | File> = {}
         for (const [key, val] of form.entries()) {
             obj[key] = val
         }

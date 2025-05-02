@@ -31,12 +31,12 @@ const eventDispatcher = new lark.EventDispatcher({
     encryptKey: process.env.EVENT_ENCRYPT_KEY || '',
     verificationToken: process.env.EVENT_VERIFICATION_TOKEN || '',
 }).register({
-    'drive.file.bitable_record_changed_v1': async (data: any) => {
+    'drive.file.bitable_record_changed_v1': async (data: Record<string, unknown>) => {
         console.log('收到飞书多维表格变更事件:', data);
         return 'success';
     },
     // 添加通用事件处理
-    '*': async (data: any) => {
+    '*': async (data: Record<string, unknown>) => {
         console.log('收到未注册的飞书事件:', data);
         return 'success';
     }
