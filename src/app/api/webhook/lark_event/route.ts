@@ -2,8 +2,8 @@
  * @Author: 杨仕明 shiming.y@qq.com
  * @Date: 2025-04-27 09:43:12
  * @LastEditors: 杨仕明 shiming.y@qq.com
- * @LastEditTime: 2025-05-02 21:14:50
- * @FilePath: /meeting_record/src/app/api/lark_event/route.ts
+ * @LastEditTime: 2025-05-03 21:36:04
+ * @FilePath: /meeting_record/src/app/api/webhook/lark_event/route.ts
  * @Description: 
  * 
  * Copyright (c) 2025 by ${git_name_email}, All Rights Reserved. 
@@ -11,7 +11,7 @@
 
 import * as lark from '@larksuiteoapi/node-sdk';
 import { NextRequest } from 'next/server';
-import { createFeishuAdapter } from '../../../utils/lark/event/adapter';
+import { createFeishuAdapter } from '@/utils/lark/event/adapter';
 
 
 // Next.js API 路由处理
