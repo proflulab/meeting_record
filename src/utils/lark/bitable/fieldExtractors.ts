@@ -2,10 +2,10 @@
  * @Author: 杨仕明 shiming.y@qq.com
  * @Date: 2025-04-21 14:47:31
  * @LastEditors: 杨仕明 shiming.y@qq.com
- * @LastEditTime: 2025-04-21 16:15:20
- * @FilePath: /meeting_record/src/utils/fieldExtractors.ts
- * @Description: 
- * 
+ * @LastEditTime: 2025-05-03 23:37:58
+ * @FilePath: /meeting_record/src/utils/lark/bitable/fieldExtractors.ts
+ * @Description:
+ *
  * Copyright (c) 2025 by ${git_name_email}, All Rights Reserved. 
  */
 

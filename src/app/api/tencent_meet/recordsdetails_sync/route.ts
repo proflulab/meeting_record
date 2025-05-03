@@ -1,17 +1,15 @@
 import { NextRequest } from "next/server";
-import { updateRecords } from '@/utils/bitable';
-import { searchRecordsWithIterator } from "@/utils/lark";
-import { getmeetFile, getMeetingParticipants, getMeetingDetail } from '@/utils/meeting';
-import { fetchTextFromUrl } from '@/utils/file';  // 添加这行
-import { extractText } from '@/utils/fieldExtractors';
-
+import { updateRecords } from '@/utils/lark/bitable/bitable';
+import { fetchTextFromUrl } from '@/utils/lark/bitable/file';
+import { extractText } from '@/utils/lark/bitable/fieldExtractors';
+import { searchRecordsWithIterator } from "@/utils/lark/bitable/lark";
+import { getmeetFile, getMeetingParticipants, getMeetingDetail } from '@/utils/tencent_meeting/meeting';
 
 
 // 配置信息，实际应用中应从环境变量获取
 const LARK_TABLE_ID = process.env.LARK_TABLE_ID || "";
 const LARK_BASE_APP_TOKEN = process.env.LARK_BASE_APP_TOKEN || "";
 const USER_ID = process.env.USER_ID || "";
-
 
 
 /**
