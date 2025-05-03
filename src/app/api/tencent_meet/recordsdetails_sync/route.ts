@@ -226,7 +226,6 @@ export async function POST(request: NextRequest) {
 
             console.log(`查找记录 ${record_id} 是否有meeting_type:${meeting_type ? 'full' : 'null'}`);
             if (!meeting_type) {
-
                 // 获取会议详情
                 try {
                     meetingDetail = await getMeetingDetail(meeting_id || '', USER_ID);
