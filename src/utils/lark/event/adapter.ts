@@ -2,7 +2,7 @@
  * @Author: 杨仕明 shiming.y@qq.com
  * @Date: 2025-05-02 19:30:00
  * @LastEditors: 杨仕明 shiming.y@qq.com
- * @LastEditTime: 2025-05-02 21:30:29
+ * @LastEditTime: 2025-05-03 21:30:16
  * @FilePath: /meeting_record/src/utils/lark/event/adapter.ts
  * @Description: 飞书事件适配器
  * 
@@ -57,7 +57,7 @@ export const createFeishuAdapter = (
         // 3. 处理事件分发
         try {
             const needCheck = options?.needCheck ?? false;
-            console.log('data:', JSON.stringify(data));
+            // console.log('data:', JSON.stringify(data));
             const result = await dispatcher.invoke(data, { needCheck });
 
             // 4. 返回结果

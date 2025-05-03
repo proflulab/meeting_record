@@ -2,7 +2,7 @@
  * @Author: 杨仕明 shiming.y@qq.com
  * @Date: 2025-04-07 23:13:27
  * @LastEditors: 杨仕明 shiming.y@qq.com
- * @LastEditTime: 2025-04-08 11:31:46
+ * @LastEditTime: 2025-05-03 21:41:13
  * @FilePath: /meeting_record/src/app/api/participants_sync/route.ts
  * @Description: 
  * 
@@ -23,7 +23,23 @@ interface SyncResponse {
 }
 
 /**
- * POST请求处理 - 同步会议参会者
+ * POST Request Handler - Synchronize Meeting Participants
+ *
+ * This function handles POST requests to synchronize meeting participants data.
+ * It retrieves meeting participant information from Tencent Meeting API and updates
+ * the corresponding records in a Lark Bitable table.
+ *
+ * @param {NextRequest} request - The Next.js request object containing the request data
+ *                                 Expected request body format:
+ *                                 {
+ *                                   tableId?: string, // Optional: ID of the Bitable table
+ *                                   limit?: number   // Optional: Maximum number of records to process
+ *                                 }
+ *
+ * @returns {Promise<Response>} A Response object with JSON payload indicating success/failure
+ *                             and statistics about the synchronization process
+ *
+ * @throws Will catch any errors during execution and return a 500 response with error details
  */
 export async function POST(request: NextRequest) {
     try {
@@ -92,8 +108,6 @@ export async function POST(request: NextRequest) {
                         return participant.user_name; // 如果解码失败，返回原始值
                     }
                 }))];
-
-                console.log(`会议ID ${meetingId} 有 ${participantNames.length} 名参会者`);
 
                 console.log(`会议ID ${meetingId} 有 ${participantNames.length} 名参会者`);
 
