@@ -193,7 +193,7 @@ export async function getCorpRecords(
     endTime: number,
     pageSize: number = 10,
     page: number = 1,
-    operator_id: string = process.env.TEST_USER_ID || '',
+    operator_id: string = process.env.USER_ID || '',
     operator_id_type: number = 1
 ): Promise<RecordMeetingsResponse> {
     try {

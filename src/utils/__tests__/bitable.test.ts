@@ -8,7 +8,7 @@
  * 
  * Copyright (c) 2025 by ${git_name_email}, All Rights Reserved. 
  */
-import { createRecords, uploadFileFromUrl, updateRecords, searchRecords } from '../bitable';
+import { createRecords, uploadFileFromUrl, updateRecords, searchRecords } from '../lark/bitable/bitable';
 
 
 beforeAll(() => {
