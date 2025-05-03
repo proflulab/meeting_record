@@ -7,9 +7,7 @@ import { getmeetFile, getMeetingParticipants, getMeetingDetail } from '@/utils/t
 
 
 // 配置信息，实际应用中应从环境变量获取
-const LARK_TABLE_ID = process.env.LARK_TABLE_ID || "";
 const LARK_BASE_APP_TOKEN = process.env.LARK_BASE_APP_TOKEN || "";
-const USER_ID = process.env.USER_ID || "";
 
 
 /**
@@ -32,30 +30,14 @@ export async function POST(request: NextRequest) {
             }[];
         };
 
-        try {
-            // 尝试解析请求体
-            const requestBody = await request.json();
-            // 如果请求体中包含过滤条件，则使用请求体中的过滤条件
-            if (requestBody.filter) {
-                filter = requestBody.filter;
-                console.log('使用请求提供的过滤条件:', JSON.stringify(filter));
-            } else {
-                // 否则使用默认过滤条件
-                filter = {
-                    conjunction: "and",
-                    conditions: [
-                        {
-                            field_name: "record_file_id",
-                            operator: "isNotEmpty",
-                            value: []
-                        }
-                    ]
-                };
-                console.log('使用默认过滤条件');
-            }
-        } catch (error) {
-            // 如果解析请求体失败，则使用默认过滤条件
-            console.log('解析请求体失败，使用默认过滤条件:', error);
+        // 尝试解析请求体
+        const requestBody = await request.json();
+        // 如果请求体中包含过滤条件，则使用请求体中的过滤条件
+        if (requestBody.filter) {
+            filter = requestBody.filter;
+            console.log('使用请求提供的过滤条件:', JSON.stringify(filter));
+        } else {
+            // 否则使用默认过滤条件
             filter = {
                 conjunction: "and",
                 conditions: [
@@ -66,7 +48,12 @@ export async function POST(request: NextRequest) {
                     }
                 ]
             };
+            console.log('使用默认过滤条件');
         }
+
+
+        const LARK_TABLE_ID = requestBody.tableid;
+        const USER_ID = requestBody.userid;
 
         // 在 B 表中查找对应记录
         const search_record = await searchRecordsWithIterator(LARK_BASE_APP_TOKEN, LARK_TABLE_ID, 500, undefined, filter);
@@ -94,14 +81,10 @@ export async function POST(request: NextRequest) {
                 continue;
             }
 
-
             let meetfile_result;
-
-
 
             console.log(`查找记录 ${record_id} 是否有meeting_id:${meeting_id ? 'full' : 'null'}`);
             if (!meeting_id) {
-
                 // 获取会议录制文件详情
                 try {
                     meetfile_result = await getmeetFile(record_file_id, USER_ID);
@@ -111,7 +94,6 @@ export async function POST(request: NextRequest) {
                     await updateRecords(LARK_TABLE_ID, record_id, {
                         meeting_id: error instanceof Error ? error.message : 'Unknown error occurred',
                     });
-
                     continue;  // 跳过当前循环
                 }
 
@@ -264,6 +246,9 @@ export async function POST(request: NextRequest) {
             }
 
 
+            let sub_meeting_id_new;
+            sub_meeting_id_new = sub_meeting_id;
+
             console.log(`查找记录 ${record_id} 是否有sub_meeting_id:${sub_meeting_id ? 'full' : 'null'}`);
             if (!sub_meeting_id) {
 
@@ -327,6 +312,8 @@ export async function POST(request: NextRequest) {
                         await updateRecords(LARK_TABLE_ID, record_id, {
                             sub_meeting_id: newTimestamp,
                         });
+                        sub_meeting_id_new = newTimestamp;
+
                         console.log(`更新完成记录 ${record_id} -sub_meeting_id`);
                     }
                 }
@@ -338,7 +325,7 @@ export async function POST(request: NextRequest) {
                 // 获取会议参会者列表
                 let participantsData;
                 try {
-                    participantsData = await getMeetingParticipants(String(meeting_id), String(USER_ID), sub_meeting_id);
+                    participantsData = await getMeetingParticipants(String(meeting_id), String(USER_ID), sub_meeting_id_new);
                 } catch (error) {
                     console.log(`查找记录 ${record_id} 会议参会者错误，跳过处理`);
                     continue;  // 跳过当前循环
