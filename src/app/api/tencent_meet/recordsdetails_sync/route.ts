@@ -331,14 +331,18 @@ export async function POST(request: NextRequest) {
                     participants: String(participantNames),
                 });
                 console.log(`更新完成记录 ${record_id} -participants`);
-            } else {
-                const participants = ai_meeting_transcripts ? extractParticipants(ai_meeting_transcripts) : [];
+            } else if (meeting_summary) {
+                const participants = extractParticipants(meeting_summary);
                 // 更新记录-参会者
                 await updateRecords(tableid, record_id, {
-                    participants: String(participants),
+                    participants: String(participants.length === 0 ? ["null"] : participants),
                 });
+            } else {
+                await updateRecords(tableid, record_id, {
+                    participants: "null",
+                });
+                console.log(`会议ID ${meeting_id} 无法获取参会者信息`);
             }
-            console.log(`会议ID ${meeting_id} 没有参会者信息`);
         }
     }
 
