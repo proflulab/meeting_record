@@ -407,8 +407,6 @@ export async function getMeetingParticipants(
     subMeetingId?: string | null
 ): Promise<MeetingParticipantsResponse> {
     try {
-
-        console.log('subMeetingId:', subMeetingId);
         // 构建 requestUri
         const requestUri = `/v1/meetings/${meetingId}/participants?userid=${userId}`
             + (subMeetingId ? `&sub_meeting_id=${subMeetingId}` : '');
