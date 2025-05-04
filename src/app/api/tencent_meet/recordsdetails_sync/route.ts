@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { updateRecords } from '@/utils/lark/bitable/bitable';
 import { fetchTextFromUrl } from '@/utils/lark/bitable/file';
-import { extractText } from '@/utils/lark/bitable/fieldExtractors';
+import { extractAllText } from '@/utils/lark/bitable/fieldExtractors';
 import { searchRecordsWithIterator } from "@/utils/lark/bitable/lark";
 import { getmeetFile, getMeetingParticipants, getMeetingDetail } from '@/utils/tencent_meeting/meeting';
 
@@ -53,14 +53,14 @@ export async function POST(request: NextRequest) {
 
         const record_id = record.record_id ?? "";
 
-        const record_file_id = extractText(record.fields.record_file_id);
-        const meeting_summary = extractText(record.fields.meeting_summary);
-        const ai_meeting_transcripts = extractText(record.fields.ai_meeting_transcripts);
-        const ai_minutes = extractText(record.fields.ai_minutes);
-        const meeting_id = extractText(record.fields.meeting_id);
-        const participants = extractText(record.fields.participants); // 获取参会者字段的文本值
-        const meeting_code = extractText(record.fields.meeting_code);
-        const sub_meeting_id = extractText(record.fields.sub_meeting_id);
+        const record_file_id = extractAllText(record.fields.record_file_id);
+        const meeting_summary = extractAllText(record.fields.meeting_summary);
+        const ai_meeting_transcripts = extractAllText(record.fields.ai_meeting_transcripts);
+        const ai_minutes = extractAllText(record.fields.ai_minutes);
+        const meeting_id = extractAllText(record.fields.meeting_id);
+        const participants = extractAllText(record.fields.participants); // 获取参会者字段的文本值
+        const meeting_code = extractAllText(record.fields.meeting_code);
+        const sub_meeting_id = extractAllText(record.fields.sub_meeting_id);
         const meeting_type = record.fields.meeting_type;
         const start_time = record.fields.start_time;
 
@@ -332,8 +332,13 @@ export async function POST(request: NextRequest) {
                 });
                 console.log(`更新完成记录 ${record_id} -participants`);
             } else {
-                console.log(`会议ID ${meeting_id} 没有参会者信息`);
+                const participants = ai_meeting_transcripts ? extractParticipants(ai_meeting_transcripts) : [];
+                // 更新记录-参会者
+                await updateRecords(tableid, record_id, {
+                    participants: String(participants),
+                });
             }
+            console.log(`会议ID ${meeting_id} 没有参会者信息`);
         }
     }
 
@@ -346,3 +351,18 @@ export async function POST(request: NextRequest) {
     });
 }
 
+
+const extractParticipants = (text: string): string[] => {
+    const regex = /^([^\(\):\n]+(?:（[^）]*）)?)(?=\(\d{2}:\d{2}:\d{2}\))/gm;
+    const namesSet = new Set<string>();
+    let match;
+
+    while ((match = regex.exec(text)) !== null) {
+        const name = match[1].trim();
+        if (name) {
+            namesSet.add(name);
+        }
+    }
+
+    return Array.from(namesSet);
+};

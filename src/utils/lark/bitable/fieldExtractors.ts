@@ -2,7 +2,7 @@
  * @Author: 杨仕明 shiming.y@qq.com
  * @Date: 2025-04-21 14:47:31
  * @LastEditors: 杨仕明 shiming.y@qq.com
- * @LastEditTime: 2025-05-03 23:37:58
+ * @LastEditTime: 2025-05-04 20:16:58
  * @FilePath: /meeting_record/src/utils/lark/bitable/fieldExtractors.ts
  * @Description:
  *
@@ -15,21 +15,27 @@ type FieldItem = {
 };
 
 function isFieldItemArray(field: unknown): field is FieldItem[] {
-    return Array.isArray(field) && typeof field[0] === "object" && field[0] !== null;
+    return (
+        Array.isArray(field) &&
+        field.every(item => typeof item === 'object' && item !== null)
+    );
 }
 
-export function extractFieldProp<T extends string>(
+function extractFieldProps<T extends string>(
     field: unknown,
     key: T
-): string | undefined {
+): string {
     if (isFieldItemArray(field)) {
-        const value = field[0][key];
-        return typeof value === "string" ? value : undefined;
+        return field
+            .map(item => item[key])
+            .filter((value): value is string => typeof value === 'string')
+            .join(''); // 拼接成一个字符串
     }
-    return undefined;
+    return '';
 }
 
-export const extractText = (field: unknown) => extractFieldProp(field, "text");
-export const extractId = (field: unknown) => extractFieldProp(field, "id");
-export const extractUrl = (field: unknown) => extractFieldProp(field, "url");
-export const extractName = (field: unknown) => extractFieldProp(field, "name");
+export const extractAllText = (field: unknown) => extractFieldProps(field, 'text');
+export const extractAllId = (field: unknown) => extractFieldProps(field, 'id');
+export const extractAllUrl = (field: unknown) => extractFieldProps(field, 'url');
+export const extractAllName = (field: unknown) => extractFieldProps(field, 'name');
+
