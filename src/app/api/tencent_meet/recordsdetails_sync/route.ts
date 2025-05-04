@@ -15,48 +15,34 @@ const LARK_BASE_APP_TOKEN = process.env.LARK_BASE_APP_TOKEN || "";
  */
 export async function POST(request: NextRequest) {
     try {
-        // 尝试从请求体中获取过滤条件
-        let filter: {
-            conjunction: "and" | "or";
-            conditions: {
-                field_name: string;
-                operator:
-                | "is" | "isNot" | "contains" | "doesNotContain"
-                | "isEmpty" | "isNotEmpty"
-                | "isGreater" | "isGreaterEqual"
-                | "isLess" | "isLessEqual"
-                | "like" | "in";
-                value?: string[];
-            }[];
-        };
-
         // 尝试解析请求体
         const requestBody = await request.json();
-        // 如果请求体中包含过滤条件，则使用请求体中的过滤条件
-        if (requestBody.filter) {
-            filter = requestBody.filter;
-            console.log('使用请求提供的过滤条件:', JSON.stringify(filter));
-        } else {
-            // 否则使用默认过滤条件
-            filter = {
-                conjunction: "and",
-                conditions: [
-                    {
-                        field_name: "record_file_id",
-                        operator: "isNotEmpty",
-                        value: []
-                    }
-                ]
-            };
-            console.log('使用默认过滤条件');
+
+        // 验证所有必要字段
+        const requiredFields = ['filter', 'tableid', 'userid'];
+        const missingFields = requiredFields.filter(field => !requestBody[field]);
+
+        if (missingFields.length > 0) {
+            console.log(`请求中缺少必要的字段: ${missingFields.join(', ')}`);
+            return new Response(`请求中缺少必要的字段: ${missingFields.join(', ')}`, {
+                status: 400,
+                headers: { "Content-Type": "text/plain" }
+            });
         }
 
+        // 使用解构赋值提取请求体中的字段
+        const { filter, tableid, userid } = requestBody;
 
-        const LARK_TABLE_ID = requestBody.tableid;
-        const USER_ID = requestBody.userid;
+        // 验证字段类型
+        if (typeof filter !== 'object') {
+            return new Response("filter 必须是一个对象", {
+                status: 400,
+                headers: { "Content-Type": "text/plain" }
+            });
+        }
 
         // 在 B 表中查找对应记录
-        const search_record = await searchRecordsWithIterator(LARK_BASE_APP_TOKEN, LARK_TABLE_ID, 500, undefined, filter);
+        const search_record = await searchRecordsWithIterator(LARK_BASE_APP_TOKEN, tableid, 500, undefined, filter);
         console.log(`共查找到 ${search_record.length} 条记录`);
 
         for (const record of search_record) {
@@ -87,17 +73,17 @@ export async function POST(request: NextRequest) {
             if (!meeting_id) {
                 // 获取会议录制文件详情
                 try {
-                    meetfile_result = await getmeetFile(record_file_id, USER_ID);
+                    meetfile_result = await getmeetFile(record_file_id, userid);
                 } catch (error) {
                     console.log(`查找记录 ${record_id} 录制文件详情错误，跳过处理`);
 
-                    await updateRecords(LARK_TABLE_ID, record_id, {
+                    await updateRecords(tableid, record_id, {
                         meeting_id: error instanceof Error ? error.message : 'Unknown error occurred',
                     });
                     continue;  // 跳过当前循环
                 }
 
-                await updateRecords(LARK_TABLE_ID, record_id, {
+                await updateRecords(tableid, record_id, {
                     meeting_id: meetfile_result.meeting_id,
                 });
                 console.log(`更新完成记录 ${record_id} -meeting_id`);
@@ -111,11 +97,11 @@ export async function POST(request: NextRequest) {
                 if (!meetfile_result) {
                     // 获取会议录制文件详情
                     try {
-                        meetfile_result = await getmeetFile(record_file_id, USER_ID);
+                        meetfile_result = await getmeetFile(record_file_id, userid);
                     } catch (error) {
                         console.log(`查找记录 ${record_id} 录制文件详情错误，跳过处理`);
 
-                        await updateRecords(LARK_TABLE_ID, record_id, {
+                        await updateRecords(tableid, record_id, {
                             meeting_code: error instanceof Error ? error.message : 'Unknown error occurred',
                         });
 
@@ -123,7 +109,7 @@ export async function POST(request: NextRequest) {
                     }
                 }
 
-                await updateRecords(LARK_TABLE_ID, record_id, {
+                await updateRecords(tableid, record_id, {
                     meeting_code: meetfile_result.meeting_code,
                 });
                 console.log(`更新完成记录 ${record_id} -meeting_code`);
@@ -136,11 +122,11 @@ export async function POST(request: NextRequest) {
                 if (!meetfile_result) {
                     // 获取会议录制文件详情
                     try {
-                        meetfile_result = await getmeetFile(record_file_id, USER_ID);
+                        meetfile_result = await getmeetFile(record_file_id, userid);
                     } catch (error) {
                         console.log(`查找记录 ${record_id} 录制文件详情错误，跳过处理`);
 
-                        await updateRecords(LARK_TABLE_ID, record_id, {
+                        await updateRecords(tableid, record_id, {
                             meeting_summary: error instanceof Error ? error.message : 'Unknown error occurred',
                         });
 
@@ -154,7 +140,7 @@ export async function POST(request: NextRequest) {
 
                 const summaryfileContent = await fetchTextFromUrl(summaryAddress || "");
 
-                await updateRecords(LARK_TABLE_ID, record_id, {
+                await updateRecords(tableid, record_id, {
                     meeting_summary: summaryfileContent || "无内容",
                 });
                 console.log(`更新完成记录 ${record_id} -meeting_summary`);
@@ -166,11 +152,11 @@ export async function POST(request: NextRequest) {
                 if (!meetfile_result) {
                     // 获取会议录制文件详情
                     try {
-                        meetfile_result = await getmeetFile(record_file_id, USER_ID);
+                        meetfile_result = await getmeetFile(record_file_id, userid);
                     } catch (error) {
                         console.log(`查找记录 ${record_id} 录制文件详情错误，跳过处理`);
 
-                        await updateRecords(LARK_TABLE_ID, record_id, {
+                        await updateRecords(tableid, record_id, {
                             ai_meeting_transcripts: error instanceof Error ? error.message : 'Unknown error occurred',
                         });
 
@@ -185,7 +171,7 @@ export async function POST(request: NextRequest) {
 
                 const transcriptsfileContent = await fetchTextFromUrl(transcriptsAddress || "");
 
-                await updateRecords(LARK_TABLE_ID, record_id, {
+                await updateRecords(tableid, record_id, {
                     ai_meeting_transcripts: transcriptsfileContent || "无内容",
                 });
                 console.log(`更新完成记录 ${record_id} -ai_meeting_transcripts`);
@@ -197,11 +183,11 @@ export async function POST(request: NextRequest) {
                 if (!meetfile_result) {
                     // 获取会议录制文件详情
                     try {
-                        meetfile_result = await getmeetFile(record_file_id, USER_ID);
+                        meetfile_result = await getmeetFile(record_file_id, userid);
                     } catch (error) {
                         console.log(`查找记录 ${record_id} 录制文件详情错误，跳过处理`);
 
-                        await updateRecords(LARK_TABLE_ID, record_id, {
+                        await updateRecords(tableid, record_id, {
                             meetfile_result: error instanceof Error ? error.message : 'Unknown error occurred',
                         });
 
@@ -216,7 +202,7 @@ export async function POST(request: NextRequest) {
 
                 const minutesfileContent = await fetchTextFromUrl(minutesAddress || "");
 
-                await updateRecords(LARK_TABLE_ID, record_id, {
+                await updateRecords(tableid, record_id, {
                     ai_minutes: minutesfileContent || "无内容",
                 });
                 console.log(`更新完成记录 ${record_id} -ai_minutes`);
@@ -228,17 +214,17 @@ export async function POST(request: NextRequest) {
             if (!meeting_type) {
                 // 获取会议详情
                 try {
-                    meetingDetail = await getMeetingDetail(meeting_id || '', USER_ID);
+                    meetingDetail = await getMeetingDetail(meeting_id || '', userid);
                 } catch (error) {
                     console.log(`查找记录 ${record_id} 会议详情错误，跳过处理`);
 
-                    await updateRecords(LARK_TABLE_ID, record_id, {
+                    await updateRecords(tableid, record_id, {
                         备注: error instanceof Error ? error.message : 'Unknown error occurred',
                     });
                     continue;  // 跳过当前循环
                 }
 
-                await updateRecords(LARK_TABLE_ID, record_id, {
+                await updateRecords(tableid, record_id, {
                     meeting_type: meetingDetail.meeting_info_list[0].meeting_type,
                 });
                 console.log(`更新完成记录 ${record_id} -meeting_type`);
@@ -254,11 +240,11 @@ export async function POST(request: NextRequest) {
                 if (!meetingDetail) {
                     // 获取会议详情
                     try {
-                        meetingDetail = await getMeetingDetail(meeting_id || '', USER_ID);
+                        meetingDetail = await getMeetingDetail(meeting_id || '', userid);
                     } catch (error) {
                         console.log(`查找记录 ${record_id} 会议详情错误，跳过处理`);
 
-                        await updateRecords(LARK_TABLE_ID, record_id, {
+                        await updateRecords(tableid, record_id, {
                             备注: error instanceof Error ? error.message : 'Unknown error occurred',
                         });
                         continue;  // 跳过当前循环
@@ -308,7 +294,7 @@ export async function POST(request: NextRequest) {
                         }
 
                         // 更新sub_meeting_id
-                        await updateRecords(LARK_TABLE_ID, record_id, {
+                        await updateRecords(tableid, record_id, {
                             sub_meeting_id: newTimestamp,
                         });
                         sub_meeting_id_new = newTimestamp;
@@ -324,7 +310,7 @@ export async function POST(request: NextRequest) {
                 // 获取会议参会者列表
                 let participantsData;
                 try {
-                    participantsData = await getMeetingParticipants(String(meeting_id), String(USER_ID), sub_meeting_id_new);
+                    participantsData = await getMeetingParticipants(String(meeting_id), String(userid), sub_meeting_id_new);
                 } catch (error) {
                     console.log(`查找记录 ${record_id} 会议参会者错误，跳过处理`);
                     continue;  // 跳过当前循环
@@ -348,7 +334,7 @@ export async function POST(request: NextRequest) {
                 }))];
 
                 // 更新记录-参会者
-                await updateRecords(LARK_TABLE_ID, record_id, {
+                await updateRecords(tableid, record_id, {
                     participants: String(participantNames),
                 });
                 console.log(`更新完成记录 ${record_id} -participants`);
