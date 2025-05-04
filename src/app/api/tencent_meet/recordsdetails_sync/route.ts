@@ -309,7 +309,7 @@ export async function POST(request: NextRequest) {
             let participantsData;
             try {
                 participantsData = await getMeetingParticipants(String(meeting_id), String(userid), sub_meeting_id_new);
-            } catch (error) {
+            } catch {
                 console.log(`查找记录 ${record_id} 会议参会者错误，跳过处理`);
             }
 
