@@ -1,5 +1,5 @@
 import { createHmac } from 'crypto';
-import { MeetingDetailResponse } from '../types/meeting';
+import { MeetingDetailResponse } from '@/types/meeting';
 
 interface MeetingSummary {
     download_address: string;

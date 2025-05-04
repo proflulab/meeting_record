@@ -249,10 +249,10 @@ export async function POST(request: NextRequest) {
                 }
             }
 
-            const meetingInfo = meetingDetail.meeting_info_list[0];
+            const meetingInfo = meetingDetail?.meeting_info_list?.[0];
 
             // 只有当会议类型为1时才更新sub_meeting_id
-            if (meetingInfo.meeting_type === 1) {
+            if (meetingInfo && meetingInfo.meeting_type === 1) {
                 console.log(`meeting_type为 ${meetingInfo.meeting_type} -周期会议`);
                 if (meetingInfo.start_time) {
                     // 从会议开始时间提取时分秒
@@ -311,31 +311,29 @@ export async function POST(request: NextRequest) {
                 participantsData = await getMeetingParticipants(String(meeting_id), String(userid), sub_meeting_id_new);
             } catch (error) {
                 console.log(`查找记录 ${record_id} 会议参会者错误，跳过处理`);
-                continue;  // 跳过当前循环
             }
 
-            if (!participantsData || !participantsData.participants || participantsData.participants.length === 0) {
+            if (participantsData && participantsData.participants && participantsData.participants.length !== 0) {
+                // 解码参会者名称并提取为数组
+                const participantNames = [...new Set(participantsData.participants.map(participant => {
+                    try {
+                        // Base64解码
+                        const decodedName = Buffer.from(participant.user_name, 'base64').toString('utf-8');
+                        return decodedName;
+                    } catch (error) {
+                        console.error(`解码参会者名称失败: ${participant.user_name}`, error);
+                        return participant.user_name; // 如果解码失败，返回原始值
+                    }
+                }))];
+
+                // 更新记录-参会者
+                await updateRecords(tableid, record_id, {
+                    participants: String(participantNames),
+                });
+                console.log(`更新完成记录 ${record_id} -participants`);
+            } else {
                 console.log(`会议ID ${meeting_id} 没有参会者信息`);
-                continue;
             }
-
-            // 解码参会者名称并提取为数组
-            const participantNames = [...new Set(participantsData.participants.map(participant => {
-                try {
-                    // Base64解码
-                    const decodedName = Buffer.from(participant.user_name, 'base64').toString('utf-8');
-                    return decodedName;
-                } catch (error) {
-                    console.error(`解码参会者名称失败: ${participant.user_name}`, error);
-                    return participant.user_name; // 如果解码失败，返回原始值
-                }
-            }))];
-
-            // 更新记录-参会者
-            await updateRecords(tableid, record_id, {
-                participants: String(participantNames),
-            });
-            console.log(`更新完成记录 ${record_id} -participants`);
         }
     }
 
