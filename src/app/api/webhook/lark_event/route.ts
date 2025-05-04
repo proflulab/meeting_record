@@ -2,7 +2,7 @@
  * @Author: 杨仕明 shiming.y@qq.com
  * @Date: 2025-04-27 09:43:12
  * @LastEditors: 杨仕明 shiming.y@qq.com
- * @LastEditTime: 2025-05-03 21:36:04
+ * @LastEditTime: 2025-05-04 21:01:39
  * @FilePath: /meeting_record/src/app/api/webhook/lark_event/route.ts
  * @Description: 
  * 
@@ -28,8 +28,8 @@ export async function POST(request: NextRequest) {
 
 // 事件分发器配置（请根据实际填写加密密钥和校验Token）
 const eventDispatcher = new lark.EventDispatcher({
-    encryptKey: process.env.EVENT_ENCRYPT_KEY || '',
-    verificationToken: process.env.EVENT_VERIFICATION_TOKEN || '',
+    encryptKey: process.env.LARK_EVENT_ENCRYPT_KEY || '',
+    verificationToken: process.env.LARK_EVENT_VERIFICATION_TOKEN || '',
 }).register({
     'drive.file.bitable_record_changed_v1': async (data: Record<string, unknown>) => {
         console.log('收到飞书多维表格变更事件:', data);
