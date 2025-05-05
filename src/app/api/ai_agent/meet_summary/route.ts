@@ -2,7 +2,7 @@
  * @Author: 杨仕明 shiming.y@qq.com
  * @Date: 2025-04-25 10:00:00
  * @LastEditors: 杨仕明 shiming.y@qq.com
- * @LastEditTime: 2025-05-06 02:54:42
+ * @LastEditTime: 2025-05-06 03:02:24
  * @FilePath: /meeting_record/src/app/api/ai_agent/meet_summary/route.ts
  * @Description: AI代理接口，用于根据时间范围查询会议记录并生成会议总结
  */
@@ -82,6 +82,10 @@ export async function POST(request: NextRequest) {
             // 提取会议相关信息，根据实际表格字段调整
             const meeting_summary = extractAllText(record.fields.meeting_summary);
             const participants = extractAllText(record.fields.participants).split(',');;
+            // 当会议摘要内容过短时跳过处理
+            if (meeting_summary.length < 500) {
+                continue;
+            }
 
             for (const attendee of participants) {
                 const participants_meet = extractParticipants(meeting_summary);
