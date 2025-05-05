@@ -2,8 +2,8 @@
  * @Author: 杨仕明 shiming.y@qq.com
  * @Date: 2025-03-10 14:13:25
  * @LastEditors: 杨仕明 shiming.y@qq.com
- * @LastEditTime: 2025-04-07 17:59:15
- * @FilePath: /meeting_record/src/utils/bitable.ts
+ * @LastEditTime: 2025-05-02 21:31:56
+ * @FilePath: /meeting_record/src/utils/lark/bitable/bitable.ts
  * @Description: 飞书多维表格操作工具函数
  */
 

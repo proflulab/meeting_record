@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
-import { getCorpRecords } from "@/utils/meeting";
-import { batchCreateRecords } from "@/utils/bitable";
-import { searchRecordsWithIterator } from "@/utils/lark";
+import { getCorpRecords } from "@/utils/tencent_meeting/meeting";
+import { batchCreateRecords } from "@/utils/lark/bitable/bitable";
+import { searchRecordsWithIterator } from "@/utils/lark/bitable/lark";
 
 // 配置信息，实际应用中应从环境变量获取
 const LARK_BASE_APP_TOKEN = process.env.LARK_BASE_APP_TOKEN || "";

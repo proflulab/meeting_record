@@ -1,9 +1,9 @@
 import { NextRequest } from "next/server";
-import { verifySignature, aesDecrypt } from "@/utils/crypto";
-import { createRecords, updateRecords, searchRecords } from '@/utils/bitable';
-import { getmeetFile, getMeetingParticipants } from '@/utils/meeting';
-import { fetchTextFromUrl } from '@/utils/file';  // 添加这行
-import * as openaiDeepseek from "@/utils/ai/openai/openai_chat";
+import { verifySignature, aesDecrypt } from "@/utils/tencent_meeting/crypto";
+import { createRecords, updateRecords, searchRecords } from '@/utils/lark/bitable/bitable';
+import { getmeetFile, getMeetingParticipants } from '@/utils/tencent_meeting/meeting';
+import { fetchTextFromUrl } from '@/utils/lark/bitable/file';  // 添加这行
+import { chatCompletion } from "@/utils/ai/openai/openai_chat";
 
 
 // 配置信息，实际应用中应从环境变量获取
@@ -209,7 +209,7 @@ export async function POST(request: NextRequest) {
                     for (const participant of participantNames) {
                         // 针对每个参会者，调用大模型接口进行项目进度总结
                         try {
-                            const summary = await openaiDeepseek.chatCompletion({
+                            const summary = await chatCompletion({
                                 messages: [
                                     { role: "system", content: "你是一个会议记录分析助手，专注于为每位参会者总结其在会议中的项目进度。" },
                                     { role: "user", content: `请根据以下会议内容，针对参会者“${participant}”在本次会议中的项目进度进行简要总结。\n会议内容：${transcriptsfileContent}` }
