@@ -2,8 +2,8 @@
  * @Author: 杨仕明 shiming.y@qq.com
  * @Date: 2025-03-21 14:13:42
  * @LastEditors: 杨仕明 shiming.y@qq.com
- * @LastEditTime: 2025-04-20 17:23:42
- * @FilePath: /meeting_record/src/utils/lark.ts
+ * @LastEditTime: 2025-05-05 15:07:30
+ * @FilePath: /meeting_record/src/utils/lark/bitable/lark.ts
  * @Description: 飞书API操作工具函数
  */
 
@@ -311,8 +311,6 @@ export async function searchRecordsWithIterator(
         throw new Error('搜索表格记录失败: 未知错误');
     }
 }
-
-// ... existing code ...
 
 
 /**
