@@ -2,7 +2,7 @@
  * @Author: 杨仕明 shiming.y@qq.com
  * @Date: 2025-03-21 14:13:42
  * @LastEditors: 杨仕明 shiming.y@qq.com
- * @LastEditTime: 2025-05-05 15:07:30
+ * @LastEditTime: 2025-05-06 02:17:15
  * @FilePath: /meeting_record/src/utils/lark/bitable/lark.ts
  * @Description: 飞书API操作工具函数
  */
@@ -296,7 +296,7 @@ export async function searchRecordsWithIterator(
             data: {
                 filter: filter,
                 field_names: field_names,
-                automatic_fields: false,
+                automatic_fields: true,
             }
         },)) {
             if (item && item.items) {

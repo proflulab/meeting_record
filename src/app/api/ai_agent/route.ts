@@ -2,7 +2,7 @@
  * @Author: 杨仕明 shiming.y@qq.com
  * @Date: 2025-04-25 10:00:00
  * @LastEditors: 杨仕明 shiming.y@qq.com
- * @LastEditTime: 2025-05-05 18:56:22
+ * @LastEditTime: 2025-05-06 02:41:02
  * @FilePath: /meeting_record/src/app/api/ai_agent/route.ts
  * @Description: AI代理接口，用于根据时间范围查询会议记录并生成会议总结
  */
@@ -36,6 +36,13 @@ interface RequestParams {
     tableId?: string;  // 可选的表格ID
     model?: string;    // 可选的OpenAI模型名称
 }
+
+// 为每个参会人员生成单独的总结
+const attendeeSummaries: Array<{
+    participant: string;
+    关联例会: string[];
+    项目进度总结: string;
+}> = [];
 
 /**
  * 处理POST请求
@@ -76,18 +83,38 @@ export async function POST(request: NextRequest) {
             const meeting_summary = extractAllText(record.fields.meeting_summary);
             const participants = extractAllText(record.fields.participants).split(',');;
 
-            // 为每个参会人员生成单独的总结
-            const attendeeSummaries: Array<{
-                participant: string;
-                关联例会: string[];
-                项目进度总结: string;
-            }> = [];
-
             for (const attendee of participants) {
                 const participants_meet = extractParticipants(meeting_summary);
 
                 // 如果从会议记录中提取的参会人员列表不包含当前参会者，则跳过
                 if (!participants_meet.includes(attendee)) {
+                    continue;
+                }
+
+                // 查询符合条件的会议记录
+                const records_b = await searchRecordsWithIterator(
+                    appToken,
+                    "tblx2YkTD5kn4MAL",
+                    500, // 每页记录数
+                    ["编号"],
+                    {
+                        conjunction: "and",
+                        conditions: [
+                            {
+                                field_name: "participant",
+                                operator: "is",
+                                value: [attendee]
+                            },
+                            {
+                                field_name: "关联例会",
+                                operator: "is",
+                                value: [record.record_id || '']
+                            },
+                        ],
+                    }
+                );
+
+                if (records_b.length > 0) {
                     continue;
                 }
 
@@ -106,9 +133,9 @@ export async function POST(request: NextRequest) {
                     关联例会: [record.record_id || ''],
                     项目进度总结: summary
                 });
+                await batchCreateRecords("tblx2YkTD5kn4MAL", attendeeSummaries);
+                attendeeSummaries.length = 0;
             }
-
-            await batchCreateRecords("tblx2YkTD5kn4MAL", attendeeSummaries);
         }
 
         // 返回结果
@@ -118,7 +145,6 @@ export async function POST(request: NextRequest) {
 
     } catch (error: unknown) {
         console.error('AI代理处理失败:', error);
-
         if (error instanceof Error) {
             return NextResponse.json(
                 { error: `处理失败: ${error.message}` },
