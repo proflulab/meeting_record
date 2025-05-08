@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     try {
         // 第一步：检查所有参数
         const body = await request.json() as RequestParams;
-        const { filter, appToken, numbers, tableId, model } = body;
+        const { filter, appToken, numbers, tableId } = body;
 
         if (!appToken) {
             return NextResponse.json(
@@ -108,8 +108,7 @@ export async function POST(request: NextRequest) {
             }
 
             // 第五步：合并记录并进行AI总结
-            let combinedText = "";
-            let summaries = [];
+            const summaries = []
 
             for (const record of participantRecords) {
                 const summary = extractAllText(record.fields.项目进度总结) || "";
@@ -139,9 +138,6 @@ export async function POST(request: NextRequest) {
                 // 将会议时间和总结合并，并添加到数组中
                 const meetingSummary = `${meetTime}: ${summary}`;
                 summaries.push(meetingSummary);
-
-                // 同时更新combinedText以便后续使用
-                combinedText += meetingSummary + "\n\n";
             }
 
 
