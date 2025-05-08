@@ -412,7 +412,7 @@ export async function getMeetingParticipants(
             + (subMeetingId ? `&sub_meeting_id=${subMeetingId}` : '');
         const apiUrl = `https://api.meeting.qq.com${requestUri}`;
 
-        console.log('apiUrl:', apiUrl);
+        // console.log('apiUrl:', apiUrl);
 
         // 1. 准备请求头参数
         const timestamp = Math.floor(Date.now() / 1000).toString();
