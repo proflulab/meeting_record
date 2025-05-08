@@ -4,6 +4,7 @@ import { createRecords, updateRecords, searchRecords } from '@/utils/lark/bitabl
 import { getmeetFile, getMeetingParticipants } from '@/utils/tencent_meeting/meeting';
 import { fetchTextFromUrl } from '@/utils/lark/bitable/file';  // 添加这行
 import { chatCompletion } from "@/utils/ai/openai/openai_chat";
+import { extractParticipants } from "@/utils/lark/bitable/extractParticipants";
 
 
 // 配置信息，实际应用中应从环境变量获取
@@ -207,6 +208,18 @@ export async function POST(request: NextRequest) {
 
                     console.log(participantNames);
                     for (const participant of participantNames) {
+
+                        const names = extractParticipants(summaryfileContent || "");
+                        if (!names.includes(participant)) {
+                            const recordData2 = {
+                                participant,
+                                关联例会: [recordId],
+                                项目进度总结: `成员${participant}参加例会，但是未发言`
+                            };
+                            await createRecords(NUM_RECORD_TABLE_ID, recordData2);
+                            continue;
+                        }
+
                         // 针对每个参会者，调用大模型接口进行项目进度总结
                         try {
                             const summary = await chatCompletion({

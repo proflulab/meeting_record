@@ -4,7 +4,7 @@ import { fetchTextFromUrl } from '@/utils/lark/bitable/file';
 import { extractAllText } from '@/utils/lark/bitable/fieldExtractors';
 import { searchRecordsWithIterator } from "@/utils/lark/bitable/lark";
 import { getmeetFile, getMeetingParticipants, getMeetingDetail } from '@/utils/tencent_meeting/meeting';
-
+import { extractParticipants } from "@/utils/lark/bitable/extractParticipants";
 
 // 配置信息，实际应用中应从环境变量获取
 const LARK_BASE_APP_TOKEN = process.env.LARK_BASE_APP_TOKEN || "";
@@ -351,19 +351,3 @@ export async function POST(request: NextRequest) {
         headers: { "Content-Type": "text/plain" },
     });
 }
-
-
-const extractParticipants = (text: string): string[] => {
-    const regex = /^([^\(\):\n]+(?:（[^）]*）)?)(?=\(\d{2}:\d{2}:\d{2}\))/gm;
-    const namesSet = new Set<string>();
-    let match;
-
-    while ((match = regex.exec(text)) !== null) {
-        const name = match[1].trim();
-        if (name) {
-            namesSet.add(name);
-        }
-    }
-
-    return Array.from(namesSet);
-};
