@@ -2,7 +2,7 @@
  * @Author: 杨仕明 shiming.y@qq.com
  * @Date: 2025-03-10 14:13:25
  * @LastEditors: 杨仕明 shiming.y@qq.com
- * @LastEditTime: 2025-05-02 21:31:56
+ * @LastEditTime: 2025-05-08 18:20:52
  * @FilePath: /meeting_record/src/utils/lark/bitable/bitable.ts
  * @Description: 飞书多维表格操作工具函数
  */
@@ -71,7 +71,7 @@ export async function createRecords(tableId: string, fields: Record<string, Fiel
                 fields,
             },
         });
-        console.log(response.data);
+        // console.log(response.data);
         return response.data;
     } catch (error: unknown) {
         if (error instanceof Error) {
@@ -100,7 +100,7 @@ export async function updateRecords(tableId: string, recordId: string, fields: R
                 fields,
             },
         });
-        console.log(response.data);
+        // console.log(response.data);
         return response.data;
     } catch (error: unknown) {
         if (error instanceof Error) {
@@ -137,7 +137,7 @@ export async function searchRecords(tableId: string, params: {
             path: { table_id: tableId },
             params: params,
         });
-        console.log(response.data);
+        // console.log(response.data);
         return response.data;
     } catch (error: unknown) {
         if (error instanceof Error) {
@@ -267,7 +267,7 @@ export async function batchCreateRecords(tableId: string, recordsList: Record<st
                 records,
             },
         });
-        console.log(response.data);
+        // console.log(response.data);
         return response.data;
     } catch (error: unknown) {
         if (error instanceof Error) {
@@ -298,7 +298,7 @@ export async function batchUpdateRecords(tableId: string, recordsData: Array<{
                 records: recordsData,
             },
         });
-        console.log(response.data);
+        // console.log(response.data);
         return response.data;
     } catch (error: unknown) {
         if (error instanceof Error) {

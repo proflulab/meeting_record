@@ -4,7 +4,7 @@ import { fetchTextFromUrl } from '@/utils/lark/bitable/file';
 import { extractAllText } from '@/utils/lark/bitable/fieldExtractors';
 import { searchRecordsWithIterator } from "@/utils/lark/bitable/lark";
 import { getmeetFile, getMeetingParticipants, getMeetingDetail } from '@/utils/tencent_meeting/meeting';
-
+import { extractParticipants } from "@/utils/lark/bitable/extractParticipants";
 
 // 配置信息，实际应用中应从环境变量获取
 const LARK_BASE_APP_TOKEN = process.env.LARK_BASE_APP_TOKEN || "";
@@ -60,8 +60,8 @@ export async function POST(request: NextRequest) {
         const meeting_id = extractAllText(record.fields.meeting_id);
         const participants = extractAllText(record.fields.participants); // 获取参会者字段的文本值
         const meeting_code = extractAllText(record.fields.meeting_code);
-        const sub_meeting_id = extractAllText(record.fields.sub_meeting_id);
-        const meeting_type = record.fields.meeting_type;
+        let sub_meeting_id = extractAllText(record.fields.sub_meeting_id);
+        let meeting_type = record.fields.meeting_type;
         const start_time = record.fields.start_time;
 
         if (!record_file_id) {
@@ -212,8 +212,9 @@ export async function POST(request: NextRequest) {
                     meetingDetail.meeting_info_list &&
                     meetingDetail.meeting_info_list.length > 0
                 ) {
+                    meeting_type = meetingDetail.meeting_info_list[0].meeting_type;
                     await updateRecords(tableid, record_id, {
-                        meeting_type: meetingDetail.meeting_info_list[0].meeting_type,
+                        meeting_type: meeting_type,
                     });
                     console.log(`更新完成记录 ${record_id} -meeting_type`);
                 } else {
@@ -226,10 +227,6 @@ export async function POST(request: NextRequest) {
                 });
             }
         }
-
-
-        let sub_meeting_id_new;
-        sub_meeting_id_new = sub_meeting_id;
 
         console.log(`查找记录 ${record_id} 是否有sub_meeting_id:${sub_meeting_id ? 'full' : 'null'}`);
         if (meeting_type !== 1) {
@@ -295,7 +292,7 @@ export async function POST(request: NextRequest) {
                     await updateRecords(tableid, record_id, {
                         sub_meeting_id: newTimestamp,
                     });
-                    sub_meeting_id_new = newTimestamp;
+                    sub_meeting_id = newTimestamp;
 
                     console.log(`更新完成记录 ${record_id} -sub_meeting_id`);
                 }
@@ -308,7 +305,7 @@ export async function POST(request: NextRequest) {
             // 获取会议参会者列表
             let participantsData;
             try {
-                participantsData = await getMeetingParticipants(String(meeting_id), String(userid), sub_meeting_id_new);
+                participantsData = await getMeetingParticipants(String(meeting_id), String(userid), sub_meeting_id);
             } catch {
                 console.log(`查找记录 ${record_id} 会议参会者错误，跳过处理`);
             }
@@ -354,19 +351,3 @@ export async function POST(request: NextRequest) {
         headers: { "Content-Type": "text/plain" },
     });
 }
-
-
-const extractParticipants = (text: string): string[] => {
-    const regex = /^([^\(\):\n]+(?:（[^）]*）)?)(?=\(\d{2}:\d{2}:\d{2}\))/gm;
-    const namesSet = new Set<string>();
-    let match;
-
-    while ((match = regex.exec(text)) !== null) {
-        const name = match[1].trim();
-        if (name) {
-            namesSet.add(name);
-        }
-    }
-
-    return Array.from(namesSet);
-};
