@@ -2,14 +2,14 @@
  * @Author: 杨仕明 shiming.y@qq.com
  * @Date: 2025-04-08 10:00:00
  * @LastEditors: 杨仕明 shiming.y@qq.com
- * @LastEditTime: 2025-04-08 17:23:19
- * @FilePath: /meeting_record/src/app/api/meet_sub_id_sync/route.ts
+ * @LastEditTime: 2025-05-03 22:22:44
+ * @FilePath: /meeting_record/src/app/api/tencent_meet/details_sync/route.ts
  * @Description: 会议详情同步接口
  */
 
 import { NextRequest } from "next/server";
-import { getMeetingDetail } from "@/utils/meeting";
-import { searchRecords, batchUpdateRecords } from "@/utils/bitable";
+import { getMeetingDetail } from "@/utils/tencent_meeting/meeting";
+import { searchRecords, batchUpdateRecords } from "@/utils/lark/bitable/bitable";
 
 // 定义接口响应类型
 interface SyncResponse {
@@ -21,7 +21,11 @@ interface SyncResponse {
 }
 
 /**
- * POST请求处理 - 同步会议详情
+ * POST Request Handler - Synchronize Meeting Details
+ *
+ * This endpoint synchronizes meeting details from Tencent Meeting to a multi-dimensional table.
+ * It processes meeting IDs, retrieves their details, and updates corresponding records in the table.
+ * For meetings of type 1, it also calculates and updates the sub_meeting_id based on timestamp information.
  */
 export async function POST(request: NextRequest) {
     try {
@@ -171,7 +175,6 @@ export async function POST(request: NextRequest) {
                             updateFields.sub_meeting_id = newTimestamp;
                         }
                     }
-
 
                     // 准备更新数据
                     updateRecordsData.push({
