@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { getCorpRecords } from "@/utils/tencent_meeting/meeting";
+import { getCorpRecords } from "@/utils/tencent/meet/meeting";
 import { batchCreateRecords } from "@/utils/lark/bitable/bitable";
 import { searchRecordsWithIterator } from "@/utils/lark/bitable/lark";
 

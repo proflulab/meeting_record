@@ -3,7 +3,7 @@ import { updateRecords } from '@/utils/lark/bitable/bitable';
 import { fetchTextFromUrl } from '@/utils/lark/bitable/file';
 import { extractAllText } from '@/utils/lark/bitable/fieldExtractors';
 import { searchRecordsWithIterator } from "@/utils/lark/bitable/lark";
-import { getmeetFile, getMeetingParticipants, getMeetingDetail } from '@/utils/tencent_meeting/meeting';
+import { getmeetFile, getMeetingParticipants, getMeetingDetail } from '@/utils/tencent/meet/meeting';
 import { extractParticipants } from "@/utils/lark/bitable/extractParticipants";
 
 // 配置信息，实际应用中应从环境变量获取

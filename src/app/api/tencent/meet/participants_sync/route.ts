@@ -10,7 +10,7 @@
  */
 
 import { NextRequest } from "next/server";
-import { getMeetingParticipants } from "@/utils/tencent_meeting/meeting";
+import { getMeetingParticipants } from "@/utils/tencent/meet/meeting";
 import { searchRecords, batchUpdateRecords } from "@/utils/lark/bitable/bitable";
 
 // 定义接口响应类型

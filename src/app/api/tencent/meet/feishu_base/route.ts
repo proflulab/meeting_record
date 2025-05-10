@@ -10,7 +10,7 @@
  */
 import { NextRequest } from "next/server";
 import { updateRecords, searchRecords } from '@/utils/lark/bitable/bitable';
-import { getmeetFile } from '@/utils/tencent_meeting/meeting';
+import { getmeetFile } from '@/utils/tencent/meet/meeting';
 import { fetchTextFromUrl } from '@/utils/lark/bitable/file';  // 添加这行
 
 
