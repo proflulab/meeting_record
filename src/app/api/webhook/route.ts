@@ -4,7 +4,7 @@ import { createRecords, updateRecords, searchRecords } from '@/utils/bitable';
 import { getmeetFile, getMeetingParticipants } from '@/utils/meeting';
 import { fetchTextFromUrl } from '@/utils/file';  // 添加这行
 import * as openaiDeepseek from "@/utils/ai/openai/openai_chat";
-
+import webhookHandler from '@/utils/lark/webhook';
 
 // 配置信息，实际应用中应从环境变量获取
 const TOKEN = process.env.TENCENT_MEETING_TOKEN || "";
@@ -15,6 +15,13 @@ const NUM_RECORD_TABLE_ID = process.env.NUM_RECORD_TABLE_ID || "";
 /**
  * GET请求处理 - 用于URL有效性验证
  */
+
+webhookHandler.on('recordChanged', (data: any) => {
+    // 在这里处理数据变更事件
+    // 你可以根据需要添加自定义的处理逻辑
+    console.log('收到多维表格记录变更事件:', data);
+});
+
 export async function GET(request: NextRequest) {
 
     try {

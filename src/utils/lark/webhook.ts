@@ -1,11 +1,6 @@
 import * as Lark from '@larksuiteoapi/node-sdk';
 import { EventEmitter } from 'events';
 
-// 配置信息，实际应用中应从环境变量获取
-const baseConfig = {
-    appId: process.env.LARK_APP_ID || 'cli_a67786b726795013',
-    appSecret: process.env.LARK_APP_SECRET || 'jmMJaQ4koTsl0kpJ5Lk3MgGqN0MlZhY5'
-};
 
 class BitableWebhookHandler extends EventEmitter {
     public on(event: 'recordChanged', listener: (data: any) => void): this {
@@ -15,7 +10,13 @@ class BitableWebhookHandler extends EventEmitter {
 
     constructor() {
         super();
-        this.wsClient = new Lark.WSClient(baseConfig);
+        if (!process.env.LARK_APP_ID || !process.env.LARK_APP_SECRET) {
+            throw new Error('LARK_APP_ID and LARK_APP_SECRET must be provided in environment variables');
+        }
+        this.wsClient = new Lark.WSClient({
+            appId: process.env.LARK_APP_ID,
+            appSecret: process.env.LARK_APP_SECRET
+        });
         this.initializeWebSocket();
     }
 

@@ -1,14 +1,5 @@
 import Image from "next/image";
-
-import webhookHandler from '@/utils/lark/webhook';
-
-// 监听多维表格记录变更事件
-webhookHandler.on('recordChanged', (data: any) => {
-    // 在这里处理数据变更事件
-    // 你可以根据需要添加自定义的处理逻辑
-    console.log('收到多维表格记录变更事件:', data);
-});
-
+import React from "react";
 export default function Home() {
   return (
     <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
