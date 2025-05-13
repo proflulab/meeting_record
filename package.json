@@ -10,10 +10,12 @@
     "test": "jest"
   },
   "dependencies": {
+    "@ant-design/icons": "^6.0.0",
     "@lark-base-open/node-sdk": "^1.0.1",
     "@larksuiteoapi/node-sdk": "^1.46.0",
     "@types/xml2js": "^0.4.14",
     "@wecom/crypto": "^1.0.1",
+    "antd": "^5.25.1",
     "axios": "^1.8.3",
     "next": "15.2.1",
     "openai": "^4.95.1",
