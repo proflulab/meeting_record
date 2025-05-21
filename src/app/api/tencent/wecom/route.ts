@@ -2,14 +2,13 @@
  * @Author: 杨仕明 shiming.y@qq.com
  * @Date: 2025-05-11 10:00:00
  * @LastEditors: 杨仕明 shiming.y@qq.com
- * @LastEditTime: 2025-05-13 05:12:25
+ * @LastEditTime: 2025-05-13 15:22:51
  * @FilePath: /meeting_record/src/app/api/tencent/wecom/route.ts
  * @Description: 获取企业微信群聊列表和详情并保存到飞书多维表格
  * 
  * Copyright (c) 2025 by ${git_name_email}, All Rights Reserved. 
  */
 import { NextResponse } from 'next/server';
-import { weixinClient, SecretType } from '@/utils/tencent/wecom/weixin';
 import { createTableRecord, searchTableRecords, updateTableRecord } from '@/utils/lark/bitable/lark';
 
 // 群聊列表接口返回的群聊信息
