@@ -17,6 +17,7 @@ const client = new lark.Client({
     disableTokenCache: false
 });
 
+
 // 导出表格字段接口定义
 export interface TableField {
     field_name: string;
@@ -434,6 +435,7 @@ export async function searchTableRecords(
  * @returns 记录ID
  */
 export async function createTableRecord(
+    
     appToken: string,
     tableId: string,
     fields: Record<string, string | number | number | number | boolean | {
@@ -532,7 +534,7 @@ export async function createTableRecord(
         });
 
         return response.data;
-
+        
     } catch (error: unknown) {
         if (error instanceof Error) {
             throw new Error(`创建B表记录失败: ${error.message}`);
