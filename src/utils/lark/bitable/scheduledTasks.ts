@@ -21,12 +21,35 @@ export async function weeklyRecordQuery() {
 
         const records = await searchRecordsWithIterator(appToken, tableId, 20, undefined, undefined, viewId);
 
-        
-        // TODO: 处理查询到的记录，例如进行数据处理、发送通知等
+        console.log(records);
+
+        // 收集所有参会人员并去重
+        const allParticipants = new Set<string>();
         records.forEach(record => {
-            console.log(record.fields.participant_summary);
+            // participant 字段是对象数组，每个对象包含 id, name, avatar_url
+            // participant 字段是对象数组，每个对象包含 text, type
+            if (record.fields.participant && Array.isArray(record.fields.participant)) {
+                record.fields.participant.forEach((p: { text?: string }) => {
+                    if (p && typeof p.text === 'string') {
+                        allParticipants.add(p.text);
+                    }
+                });
+            }
         });
-        console.log(`查询到 ${records.length} 条记录`);
+
+        // 将去重后的参会人员转换为数组和 JSON 字符串
+        const uniqueParticipantsArray = Array.from(allParticipants);
+        const uniqueParticipantsJson = JSON.stringify(uniqueParticipantsArray, null, 2);
+
+        console.log('去重后的参会人员 (JSON):');
+        console.log(uniqueParticipantsJson);
+        console.log(`总计 ${uniqueParticipantsArray.length} 位不重复的参会人员`);
+
+        // TODO: 处理查询到的记录，例如进行数据处理、发送通知等
+        // records.forEach(record => {
+        //     console.log(record);
+        // });
+        console.log(`查询到 ${records.length} 条原始记录`);
     } catch (error) {
         console.error('执行每周记录查询失败:', error);
     }
