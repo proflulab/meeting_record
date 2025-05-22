@@ -7,17 +7,28 @@ export const config = {
   },
 };
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-04-30.basil' as const,
-});
+let stripe: Stripe | undefined;
+let webhookSecret: string | undefined;
 
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
+if (process.env.STRIPE_SECRET_KEY && process.env.STRIPE_WEBHOOK_SECRET) {
+  stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+    apiVersion: '2025-04-30.basil' as const,
+  });
+  webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+}
 
 export async function POST(req: NextRequest) {
   const rawBody = await req.text();
   const signature = req.headers.get('stripe-signature') as string;
 
   let event;
+
+  if (!stripe || !webhookSecret) {
+    console.error('❌ Stripe secret key or webhook secret not configured.');
+    return new Response('Stripe secret key or webhook secret not configured.', {
+      status: 500,
+    });
+  }
 
   try {
     event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
