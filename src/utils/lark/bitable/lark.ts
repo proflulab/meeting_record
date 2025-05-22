@@ -206,6 +206,16 @@ export async function getTableRecords(appToken: string, tableId: string, recordI
  * @param pageSize 每页记录数，默认20
  * @returns 所有匹配的记录数组
  */
+/**
+ * 使用迭代器方式搜索多维表格中的所有记录
+ * @param appToken 多维表格应用Token
+ * @param tableId 表格ID
+ * @param pageSize 每页记录数，默认20
+ * @param field_names 需要返回的字段名称数组
+ * @param filter 搜索过滤条件
+ * @param viewId 视图ID (可选)
+ * @returns 所有匹配的记录数组
+ */
 export async function searchRecordsWithIterator(
     appToken: string,
     tableId: string,
@@ -227,7 +237,7 @@ export async function searchRecordsWithIterator(
             }>;
         }>;
     },
-
+    viewId?: string
 ): Promise<Array<{
     fields: Record<string, string | number | number | number | boolean | {
         text?: string;
@@ -294,6 +304,7 @@ export async function searchRecordsWithIterator(
                 page_size: pageSize
             },
             data: {
+                view_id: viewId,
                 filter: filter,
                 field_names: field_names,
                 automatic_fields: true,
