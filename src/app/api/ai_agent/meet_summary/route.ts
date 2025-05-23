@@ -2,7 +2,7 @@
  * @Author: 杨仕明 shiming.y@qq.com
  * @Date: 2025-04-25 10:00:00
  * @LastEditors: 杨仕明 shiming.y@qq.com
- * @LastEditTime: 2025-05-06 03:02:24
+ * @LastEditTime: 2025-05-22 15:42:51
  * @FilePath: /meeting_record/src/app/api/ai_agent/meet_summary/route.ts
  * @Description: AI代理接口，用于根据时间范围查询会议记录并生成会议总结
  */
@@ -40,8 +40,8 @@ interface RequestParams {
 // 为每个参会人员生成单独的总结
 const attendeeSummaries: Array<{
     participant: string;
-    关联例会: string[];
-    项目进度总结: string;
+    meet_data: string[];
+    participant_summary: string;
 }> = [];
 
 /**
@@ -134,8 +134,8 @@ export async function POST(request: NextRequest) {
                 // 将参会者总结添加到结果中
                 attendeeSummaries.push({
                     participant: attendee,
-                    关联例会: [record.record_id || ''],
-                    项目进度总结: summary
+                    meet_data: [record.record_id || ''],
+                    participant_summary: summary
                 });
                 await batchCreateRecords("tblx2YkTD5kn4MAL", attendeeSummaries);
                 attendeeSummaries.length = 0;
