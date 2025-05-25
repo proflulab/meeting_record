@@ -1,5 +1,5 @@
 
-import { searchRecordsWithIterator } from './lark';
+import { searchRecordsWithIterator, createTableRecord } from './lark';
 import { chatCompletion } from '../../ai/openai/openai_chat';
 
 // 这里将存放每周调用飞书查询记录的逻辑
@@ -11,6 +11,29 @@ interface ParticipantRecord {
         participant_summary?: Array<{ text: string, type: string }> | string[] | string;
         [key: string]: any;
     };
+}
+
+// 创建飞书记录的函数
+export async function createWeeklySummaryRecord(participantName: string, aiSummary: string) {
+    // 使用用户提供的 appToken 和 tableId
+    const appToken = 'ZoHObSZ6Ea8nRwsuEhEcu8ijnge';
+    const tableId = 'tblfidJ9FTOCUsNZ';
+    console.log(`开始为 ${participantName} 创建周报记录，appToken: ${appToken}, tableId: ${tableId}`);
+    try {
+        // 创建记录字段
+        const fields = {
+            '名字': participantName,  // 参会人姓名
+            '一周进度': aiSummary     // AI 总结内容
+        };
+
+        // 调用飞书 API 创建记录
+        const result = await createTableRecord(appToken, tableId, fields);
+        console.log(`成功为 ${participantName} 创建周报记录:`, result?.record?.record_id);
+        return result;
+    } catch (error) {
+        console.error(`为 ${participantName} 创建周报记录失败:`, error);
+        throw error;
+    }
 }
 
 export async function weeklyRecordQuery() {
@@ -99,6 +122,7 @@ export async function weeklyRecordQuery() {
 
         // 使用 AI 对每个参会人员的摘要进行总结
         const aiSummaries: Record<string, string> = {};
+        const createdRecords = [];
         
         for (const [participant, summaries] of Object.entries(participantSummaries)) {
             if (summaries.length > 0) {
@@ -115,6 +139,17 @@ export async function weeklyRecordQuery() {
                     
                     aiSummaries[participant] = aiSummary;
                     console.log(`已为 ${participant} 生成 AI 总结`);
+                    
+                    // 为每个参会人创建一条飞书记录
+                    try {
+                        const recordResult = await createWeeklySummaryRecord(participant, aiSummary);
+                        createdRecords.push({
+                            participant,
+                            recordId: recordResult?.record?.record_id
+                        });
+                    } catch (recordError) {
+                        console.error(`创建 ${participant} 的记录失败:`, recordError);
+                    }
                 } catch (error) {
                     console.error(`为 ${participant} 生成 AI 总结时出错:`, error);
                     aiSummaries[participant] = '生成总结失败';
@@ -129,6 +164,9 @@ export async function weeklyRecordQuery() {
         console.log('\n参会人员的 AI 总结:');
         console.log(JSON.stringify(aiSummaries, null, 2));
         
+        console.log('\n创建的飞书记录:');
+        console.log(JSON.stringify(createdRecords, null, 2));
+        
         // 统计信息
         const participantCount = Object.keys(participantSummaries).length;
         const totalSummaries = Object.values(participantSummaries).reduce((total, summaries) => total + summaries.length, 0);
@@ -141,6 +179,7 @@ export async function weeklyRecordQuery() {
         
         console.log(`总计 ${participantCount} 位参会人员，共 ${totalSummaries} 条 participant_summary 记录`);
         console.log(`查询到 ${records.length} 条原始记录`);
+        console.log(`创建了 ${createdRecords.length} 条飞书周报记录`);
         
         // 生成完整的周报总结
         console.log('\n========== 本周工作总结 ==========');
@@ -173,7 +212,7 @@ export async function weeklyRecordQuery() {
             console.error('生成整体总结时出错:', error);
         }
         
-        return { participantSummaries, aiSummaries };
+        return { participantSummaries, aiSummaries, createdRecords };
     } catch (error) {
         console.error('执行每周记录查询失败:', error);
     }
