@@ -1,5 +1,6 @@
 
 import { searchRecordsWithIterator } from './lark';
+import { chatCompletion } from '../../ai/openai/openai_chat';
 
 // 这里将存放每周调用飞书查询记录的逻辑
 
@@ -62,7 +63,7 @@ export async function weeklyRecordQuery() {
             // 根据用户反馈，使用 participant_summary 字段作为摘要内容
             const participantSummary = record.fields.participant_summary;
 
-            // 调试日志：打印第一条记录的完整字段
+     
          
             // 将当前记录的 participantSummary 添加到该记录中每个参会人员的列表中
             if (participants.length > 0 && participantSummary) {
@@ -96,16 +97,44 @@ export async function weeklyRecordQuery() {
             }
         });
 
+        // 使用 AI 对每个参会人员的摘要进行总结
+        const aiSummaries: Record<string, string> = {};
+        
+        for (const [participant, summaries] of Object.entries(participantSummaries)) {
+            if (summaries.length > 0) {
+                try {
+                    const combinedSummaries = summaries.join('\n\n');
+                    const prompt = `请对以下参会人员"${participant}"的会议摘要进行总结和分析：\n\n${combinedSummaries}\n\n请提供一个简洁的总结，包括主要参与的会议内容、关键决策和行动项目。`;
+                    
+                    const aiSummary = await chatCompletion({
+                        messages: [
+                            { role: 'user', content: prompt }
+                        ],
+                        model: 'deepseek-chat'
+                    });
+                    
+                    aiSummaries[participant] = aiSummary;
+                    console.log(`已为 ${participant} 生成 AI 总结`);
+                } catch (error) {
+                    console.error(`为 ${participant} 生成 AI 总结时出错:`, error);
+                    aiSummaries[participant] = '生成总结失败';
+                }
+            }
+        }
+        
         // 输出结果
         console.log('参会人员及其 participant_summary:');
         console.log(JSON.stringify(participantSummaries, null, 2));
+        
+        console.log('\n参会人员的 AI 总结:');
+        console.log(JSON.stringify(aiSummaries, null, 2));
         
         // 统计信息
         const participantCount = Object.keys(participantSummaries).length;
         const totalSummaries = Object.values(participantSummaries).reduce((total, summaries) => total + summaries.length, 0);
         
         // 输出每个参会人员的摘要数量
-        console.log('每个参会人员的摘要数量:');
+        console.log('\n每个参会人员的摘要数量:');
         Object.entries(participantSummaries).forEach(([participant, summaries]) => {
             console.log(`${participant}: ${summaries.length} 条摘要`);
         });
@@ -113,7 +142,38 @@ export async function weeklyRecordQuery() {
         console.log(`总计 ${participantCount} 位参会人员，共 ${totalSummaries} 条 participant_summary 记录`);
         console.log(`查询到 ${records.length} 条原始记录`);
         
-        return participantSummaries;
+        // 生成完整的周报总结
+        console.log('\n========== 本周工作总结 ==========');
+        console.log(`报告日期: ${new Date().toLocaleDateString()}\n`);
+        console.log(`本周共有 ${participantCount} 位参会人员，参与了 ${records.length} 条会议记录。\n`);
+        
+        console.log('== 参会人员工作内容总结 ==');
+        for (const [participant, summary] of Object.entries(aiSummaries)) {
+            console.log(`\n【${participant}】`);
+            console.log(summary);
+            console.log('----------------------------');
+        }
+        
+        // 生成整体总结
+        try {
+            const allSummaries = Object.values(aiSummaries).join('\n\n');
+            const overallPrompt = `请根据以下各参会人员的工作总结，生成一份简洁的整体周报总结，包括主要工作内容、重要成果和下周工作重点：\n\n${allSummaries}`;
+            
+            const overallSummary = await chatCompletion({
+                messages: [
+                    { role: 'user', content: overallPrompt }
+                ],
+                model: 'deepseek-chat'
+            });
+            
+            console.log('\n== 整体工作总结 ==');
+            console.log(overallSummary);
+            console.log('\n========== 周报结束 ==========');
+        } catch (error) {
+            console.error('生成整体总结时出错:', error);
+        }
+        
+        return { participantSummaries, aiSummaries };
     } catch (error) {
         console.error('执行每周记录查询失败:', error);
     }
