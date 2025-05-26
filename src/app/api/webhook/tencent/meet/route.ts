@@ -213,8 +213,8 @@ export async function POST(request: NextRequest) {
                         if (!names.includes(participant)) {
                             const recordData2 = {
                                 participant,
-                                关联例会: [recordId],
-                                项目进度总结: `成员${participant}参加例会，但是未发言`
+                                meet_data: [recordId],
+                                participant_summary: `成员${participant}参加例会，但是未发言`
                             };
                             await createRecords(NUM_RECORD_TABLE_ID, recordData2);
                             continue;
@@ -235,8 +235,8 @@ export async function POST(request: NextRequest) {
                             // 构建记录数据
                             const recordData2 = {
                                 participant,
-                                关联例会: [recordId],
-                                项目进度总结: summary
+                                meet_data: [recordId],
+                                participant_summary: summary
                             };
                             await createRecords(NUM_RECORD_TABLE_ID, recordData2);
                         } catch (error) {
