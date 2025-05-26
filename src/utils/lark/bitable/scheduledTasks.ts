@@ -9,7 +9,7 @@ interface ParticipantRecord {
     fields: {
         participant?: Array<{ text: string, type: string }> | string[];
         participant_summary?: Array<{ text: string, type: string }> | string[] | string;
-        [key: string]: any;
+        [key: string]: unknown;
     };
 }
 
@@ -61,7 +61,7 @@ export async function weeklyRecordQuery() {
 
         records.forEach(record => {
             // 获取参会人员列表
-            let participants: string[] = [];
+            const participants: string[] = [];
             const participantField = record.fields.participant;
             
             // 处理 participant 字段可能的不同形式
