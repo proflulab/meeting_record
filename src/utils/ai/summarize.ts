@@ -2,7 +2,7 @@
  * @Author: 杨仕明 shiming.y@qq.com
  * @Date: 2025-05-06 14:40:10
  * @LastEditors: 杨仕明 shiming.y@qq.com
- * @LastEditTime: 2025-05-06 17:03:49
+ * @LastEditTime: 2025-05-27 19:45:52
  * @FilePath: /meeting_record/src/utils/ai/summarize.ts
  * @Description: 
  * 
@@ -11,7 +11,7 @@
 
 import { chatCompletion } from './openai/openai_chat';
 
-type SummarizeFunction = (chunk: string[]) => Promise<string>;
+type SummarizeFunction = (chunk: string[], model?: string, summaryPrompt?: string) => Promise<string>;
 
 const MAX_CHUNK_LENGTH = 100000;
 const DEFAULT_MODEL = 'deepseek-v3-250324';
@@ -20,7 +20,6 @@ const DEFAULT_MODEL = 'deepseek-v3-250324';
  * 拆分数组为多个数据块，保证每块字符串总长度不超过MAX_CHUNK_LENGTH
  */
 function splitIntoChunks(data: string[], maxLength: number): string[][] {
-    // ... existing code ...
     const chunks: string[][] = [];
     let currentChunk: string[] = [];
     let currentLength = 0;
@@ -46,19 +45,18 @@ function splitIntoChunks(data: string[], maxLength: number): string[][] {
 /**
  * 递归总结函数
  */
-export async function recursiveSummarize(data: string[], summarizeFn: SummarizeFunction): Promise<string> {
-    // ... existing code ...
+export async function recursiveSummarize(data: string[], summarizeFn: SummarizeFunction, model?: string, summaryPrompt?: string): Promise<string> {
     if (data.length === 1) return data[0];
 
     const chunks = splitIntoChunks(data, MAX_CHUNK_LENGTH);
     const summaries: string[] = [];
 
     for (const chunk of chunks) {
-        const summary = await summarizeFn(chunk);
+        const summary = await summarizeFn(chunk, model, summaryPrompt);
         summaries.push(summary);
     }
 
-    return await recursiveSummarize(summaries, summarizeFn);
+    return await recursiveSummarize(summaries, summarizeFn, model, summaryPrompt);
 }
 
 /**
@@ -67,11 +65,11 @@ export async function recursiveSummarize(data: string[], summarizeFn: SummarizeF
  * @param model 可选，指定使用的模型
  * @returns 摘要结果
  */
-export const openAISummarize: SummarizeFunction = async (chunk, model = DEFAULT_MODEL) => {
+export const openAISummarize: SummarizeFunction = async (chunk, model = DEFAULT_MODEL, summaryPrompt?: string) => {
     const content = chunk.join('\n');
     const messages = [
-        { role: 'system', content: '你是一个专业的会议记录摘要助手，请对以下内容进行简洁、全面的摘要。保留关键信息，去除冗余内容。' },
-        { role: 'user', content: `请对以下内容进行摘要：\n\n${content}` }
+        { role: 'system', content: summaryPrompt || '你是一个专业的会议记录摘要助手，请对以下内容进行简洁、全面的摘要。保留关键信息，去除冗余内容。' },
+        { role: 'user', content: `请根据要求对以下内容进行总结：\n\n${content}` }
     ];
 
     return await chatCompletion({

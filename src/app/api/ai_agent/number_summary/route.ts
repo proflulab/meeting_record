@@ -24,11 +24,13 @@ interface RequestParams {
     }; // 查询过滤条件
     appToken?: string; // 多维表格应用Token
     numbers?: string[]; // 需要处理的人员名单
+    period?: string;
     tableId?: { // 表格ID配置
         number_record: string; // 会议记录表ID
         order_followup: string; // 跟进表ID
     };
     model?: string; // 可选的OpenAI模型名称
+    summaryPrompt?: string; // 可选，自定义摘要提示词
 }
 
 /**
@@ -40,7 +42,7 @@ export async function POST(request: NextRequest) {
     try {
         // 第一步：检查所有参数
         const body = await request.json() as RequestParams;
-        const { filter, appToken, numbers, tableId } = body;
+        const { filter, appToken, numbers, tableId, model, summaryPrompt, period } = body;
 
         if (!appToken) {
             return NextResponse.json(
@@ -95,7 +97,7 @@ export async function POST(request: NextRequest) {
             // 第四步：从已获取的记录中筛选出满足participant=当前循环名字的记录
             const participantRecords = records.filter(record => {
                 // 检查记录中的participant字段是否包含当前参与者
-                const participants = extractAllText(record.fields.participant);
+                const participants = extractAllText(record.fields.participant_fix);
                 if (!participants) return false;
                 const participantList = participants.split(',').map(p => p.trim());
                 return participantList.includes(participant);
@@ -111,7 +113,7 @@ export async function POST(request: NextRequest) {
             const summaries = []
 
             for (const record of participantRecords) {
-                const summary = extractAllText(record.fields.项目进度总结) || "";
+                const summary = extractAllText(record.fields.participant_summary) || "";
                 let meetTime = "未知时间";
                 if (record.fields.meet_start_time) {
                     try {
@@ -140,17 +142,17 @@ export async function POST(request: NextRequest) {
                 summaries.push(meetingSummary);
             }
 
-
-            const finalReport = await recursiveSummarize(summaries, openAISummarize);
-
+            const finalReport = await recursiveSummarize(summaries, openAISummarize, model, summaryPrompt);
 
             // 第六步：将最终总结上传到order_followup表
             const currentDate = Date.now(); // 获取当前时间戳（毫秒）
 
             await createRecords(tableId.order_followup, {
-                "学员姓名": participant,
-                "AI总结概况": finalReport,
-                "登记时间": currentDate
+                "participant_name": participant,
+                "ai_summary": finalReport,
+                "recording_time": currentDate,
+                "summaryPrompt": summaryPrompt || "",
+                "period": period || ""
             });
 
             results.push({
