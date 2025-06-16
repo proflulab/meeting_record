@@ -163,8 +163,8 @@ async function handleRecordChange(action: ChangeAction): Promise<ProcessResult> 
     }
 
     const payload = Object.fromEntries(
-      Object.entries(allFields).filter(([_, fieldValue]) => fieldValue !== '' && fieldValue != null)
-    );
+      Object.entries(allFields).filter(([, fieldValue]) => fieldValue !== '' && fieldValue != null)
+    );    
     const { record_id } = await createRecordWithSDK(payload);
     return { success: true, operation: 'create', recordId: record_id, duration: Date.now() - start };
   } catch (err: any) {
