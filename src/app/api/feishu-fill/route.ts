@@ -162,7 +162,7 @@ async function handleRecordChange(action: ChangeAction): Promise<ProcessResult> 
       return { success: true, operation: 'update', recordId: existingIds.join(','), duration: Date.now() - start };
     }
 
-    const payload = Object.fromEntries(Object.entries(allFields).filter(([fieldKey, fieldValue]) => fieldValue !== '' && fieldValue != null));
+    const payload = Object.fromEntries(Object.entries(allFields).filter(([_fieldKey, fieldValue]) => fieldValue !== '' && fieldValue != null));
     const { record_id } = await createRecordWithSDK(payload);
     return { success: true, operation: 'create', recordId: record_id, duration: Date.now() - start };
   } catch (err: any) {
