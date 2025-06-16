@@ -7,8 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "jest",
-    "check:bitable": "node scripts/check-bitable.js"
+    "test": "jest"
   },
   "dependencies": {
     "@lark-base-open/node-sdk": "^1.0.1",
@@ -28,7 +27,7 @@
     "@testing-library/react": "^16.2.0",
     "@types/dotenv": "^6.1.1",
     "@types/jest": "^29.5.14",
-    "@types/node": "^20.19.0",
+    "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "dotenv": "^16.4.7",
@@ -39,6 +38,6 @@
     "tailwindcss": "^4",
     "ts-jest": "^29.2.6",
     "ts-node": "^10.9.2",
-    "typescript": "^5.8.3"
+    "typescript": "^5"
   }
 }
