@@ -42,11 +42,11 @@ const FIELD_TYPES: Record<string, 'text' | 'user'> = {
 };
 
 // -------- 工具函数 --------
-async function logToDatabase(log: any) {
+async function logToDatabase(log: Record<string, unknown>) {
   console.log('🔖 操作日志:', JSON.stringify(log));
 }
 
-function isDeepEqual(a: any, b: any): boolean {
+function isDeepEqual(a: unknown, b: unknown): boolean {
   if (a === b) return true;
   if (a == null || b == null) return false;
   return JSON.stringify(a) === JSON.stringify(b);
@@ -54,9 +54,9 @@ function isDeepEqual(a: any, b: any): boolean {
 
 function parseSingleFieldValue(
   fieldId: string,
-  fieldValue: any,
-  fieldIdentityValue?: any
-): any {
+  fieldValue: unknown,
+  fieldIdentityValue?: Record<string, unknown>
+): unknown {
   const fieldName = FIELD_MAP[fieldId];
   if (!fieldName) {
     return fieldValue;
@@ -83,7 +83,7 @@ function parseSingleFieldValue(
   if (FIELD_TYPES[fieldName] === 'user') {
     const usersFromIdentity = fieldIdentityValue?.users || [];
     const usersFromValue = Array.isArray(val) ? val : val?.users || [];
-    const allUsers = usersFromIdentity.length ? usersFromIdentity : usersFromValue;
+    const allUsers = Array.isArray(usersFromIdentity) && usersFromIdentity.length > 0 ? usersFromIdentity : usersFromValue;
 
     if (!Array.isArray(allUsers) || allUsers.length === 0) {
       console.warn('用户字段解析失败: 没有找到有效的用户数据');
@@ -146,12 +146,12 @@ function parseSingleFieldValue(
 }
 
 function parseChangedFields(
-  beforeList: Array<{ field_id: string; field_value: any; field_identity_value?: any }>,
-  afterList: Array<{ field_id: string; field_value: any; field_identity_value?: any }>
-): { changedFields: Record<string, any>; allFields: Record<string, any> } {
-  const changedFields: Record<string, any> = {};
-  const allFields: Record<string, any> = {};
-  const beforeMap: Record<string, any> = {};
+  beforeList: Array<{ field_id: string; field_value: unknown; field_identity_value?: Record<string, unknown> }>,
+  afterList: Array<{ field_id: string; field_value: unknown; field_identity_value?: Record<string, unknown> }>
+): { changedFields: Record<string, unknown>; allFields: Record<string, unknown> } {
+  const changedFields: Record<string, unknown> = {};
+  const allFields: Record<string, unknown> = {};
+  const beforeMap: Record<string, unknown> = {};
 
   for (const item of beforeList || []) {
     const name = FIELD_MAP[item.field_id];
@@ -175,8 +175,8 @@ function parseChangedFields(
 interface ChangeAction {
   action: string;
   record_id: string;
-  before_value: Array<{ field_id: string; field_value: any; field_identity_value?: any }>;
-  after_value: Array<{ field_id: string; field_value: any; field_identity_value?: any }>;
+  before_value: Array<{ field_id: string; field_value: unknown; field_identity_value?: Record<string, unknown> }>;
+  after_value: Array<{ field_id: string; field_value: unknown; field_identity_value?: Record<string, unknown> }>;
 }
 
 interface ProcessResult {
