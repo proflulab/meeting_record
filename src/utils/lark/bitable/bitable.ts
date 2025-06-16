@@ -64,15 +64,15 @@ export async function createRecords(tableId: string, fields: Record<string, Fiel
         if (!process.env.LARK_BASE_APP_TOKEN || !process.env.LARK_BASE_PERSONAL_TOKEN) {
             throw new Error('缺少必要的飞书多维表格配置，请检查环境变量 LARK_BASE_APP_TOKEN 和 LARK_BASE_PERSONAL_TOKEN');
         }
-
+ // 添加日志输出
         const response = await client.base.appTableRecord.create({
             path: { table_id: tableId },
             data: {
                 fields,
             },
         });
-        // console.log(response.data);
-        return response.data;
+        console.log('飞书 createRecords API 完整返回:', JSON.stringify(response, null, 2)); // 添加日志输出
+        return response;
     } catch (error: unknown) {
         if (error instanceof Error) {
             throw new Error(`创建记录失败: ${error.message}`);
@@ -135,10 +135,13 @@ export async function searchRecords(tableId: string, params: {
 
         const response = await client.base.appTableRecord.list({
             path: { table_id: tableId },
-            params: params,
+            params: {
+                ...params,
+                user_id_type:"open_id", // 确保 user_id_type 默认为 open_id
+            },
         });
         // console.log(response.data);
-        return response.data;
+        return response;
     } catch (error: unknown) {
         if (error instanceof Error) {
             throw new Error(`创建记录失败: ${error.message}`);
@@ -291,14 +294,14 @@ export async function batchUpdateRecords(tableId: string, recordsData: Array<{
         if (!process.env.LARK_BASE_APP_TOKEN || !process.env.LARK_BASE_PERSONAL_TOKEN) {
             throw new Error('缺少必要的飞书多维表格配置，请检查环境变量 LARK_BASE_APP_TOKEN 和 LARK_BASE_PERSONAL_TOKEN');
         }
-
+        console.log('飞书 createRecords API 调用参数:', JSON.stringify({ recordsData }, null, 2));
         const response = await client.base.appTableRecord.batchUpdate({
             path: { table_id: tableId },
             data: {
                 records: recordsData,
             },
         });
-        // console.log(response.data);
+        console.log('飞书 batchUpdateRecords API 完整返回:', JSON.stringify(response, null, 2)); // 添加日志输出
         return response.data;
     } catch (error: unknown) {
         if (error instanceof Error) {
@@ -307,7 +310,6 @@ export async function batchUpdateRecords(tableId: string, recordsData: Array<{
         throw new Error('批量更新记录失败: 未知错误');
     }
 }
-
 
 /** * 通过唯一键查找记录
  * @param tableId 表格ID
@@ -353,5 +355,42 @@ export async function findRecordByUniqueKey(tableId: string, uniqueKeyField: str
         }
         console.error(`通过唯一键查找记录失败 (${uniqueKeyValue}): 未知错误`);
         throw new Error('通过唯一键查找记录失败: 未知错误');
+    }
+}
+
+/**
+ * 通过唯一键查找所有匹配记录ID
+ * @param tableId 表格ID
+ * @param uniqueKeyField 唯一键字段名
+ * @param uniqueKeyValue 唯一键字段值
+ * @returns 匹配的所有记录ID数组
+ */
+export async function findAllRecordsByUniqueKey(tableId: string, uniqueKeyField: string, uniqueKeyValue: string): Promise<string[]> {
+    try {
+        if (!process.env.LARK_BASE_APP_TOKEN || !process.env.LARK_BASE_PERSONAL_TOKEN) {
+            throw new Error('缺少必要的飞书多维表格配置，请检查环境变量 LARK_BASE_APP_TOKEN 和 LARK_BASE_PERSONAL_TOKEN');
+        }
+        const filter = `CurrentValue.[${uniqueKeyField}]=\"${uniqueKeyValue}\"`;
+        let pageToken = undefined;
+        let allIds: string[] = [];
+        do {
+            const response = await client.base.appTableRecord.list({
+                path: { table_id: tableId },
+                params: {
+                    filter,
+                    page_size: 100,
+                    page_token: pageToken
+                },
+            });
+            const items = response.data?.items || [];
+            allIds.push(...items.map((item: any) => item.record_id));
+            pageToken = response.data?.page_token;
+        } while (pageToken);
+        return allIds;
+    } catch (error: unknown) {
+        if (error instanceof Error) {
+            throw new Error(`通过唯一键查找所有记录失败: ${error.message}`);
+        }
+        throw new Error('通过唯一键查找所有记录失败: 未知错误');
     }
 }
