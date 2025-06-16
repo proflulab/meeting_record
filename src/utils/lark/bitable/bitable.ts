@@ -383,7 +383,7 @@ export async function findAllRecordsByUniqueKey(tableId: string, uniqueKeyField:
                 },
             });
             const items = response.data?.items || [];
-            allIds.push(...items.map((item: any) => item.record_id));
+            allIds.push(...items.map((item: Record<string, unknown>) => item.record_id as string));
             pageToken = response.data?.page_token;
         } while (pageToken);
         return allIds;

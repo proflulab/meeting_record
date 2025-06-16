@@ -30,9 +30,10 @@ const FIELD_TYPES: Record<string, 'text' | 'user'> = {
   'Postal Code': 'text'
 };
 
-async function logToDatabase(log: Record<string, unknown>) {
-  console.log('🔖 操作日志:', JSON.stringify(log));
-}
+// Remove the unused logToDatabase function
+// async function logToDatabase(log: Record<string, unknown>) {
+//   console.log('🔖 操作日志:', JSON.stringify(log));
+// }
 
 function isDeepEqual(a: unknown, b: unknown): boolean {
   if (a === b) return true;
@@ -161,7 +162,7 @@ async function handleRecordChange(action: ChangeAction): Promise<ProcessResult> 
       return { success: true, operation: 'update', recordId: existingIds.join(','), duration: Date.now() - start };
     }
 
-    const payload = Object.fromEntries(Object.entries(allFields).filter(([k, v]) => v !== '' && v != null));
+    const payload = Object.fromEntries(Object.entries(allFields).filter(([fieldKey, fieldValue]) => fieldValue !== '' && fieldValue != null));
     const { record_id } = await createRecordWithSDK(payload);
     return { success: true, operation: 'create', recordId: record_id, duration: Date.now() - start };
   } catch (err: any) {
