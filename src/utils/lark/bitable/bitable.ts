@@ -372,7 +372,7 @@ export async function findAllRecordsByUniqueKey(tableId: string, uniqueKeyField:
         }
         const filter = `CurrentValue.[${uniqueKeyField}]=\"${uniqueKeyValue}\"`;
         let pageToken = undefined;
-        let allIds: string[] = [];
+        const allIds: string[] = [];
         do {
             const response = await client.base.appTableRecord.list({
                 path: { table_id: tableId },
@@ -383,7 +383,7 @@ export async function findAllRecordsByUniqueKey(tableId: string, uniqueKeyField:
                 },
             });
             const items = response.data?.items || [];
-            allIds.push(...items.map((item: any) => item.record_id));
+            allIds.push(...items.map((item: { record_id?: string }) => item.record_id).filter((id): id is string => id !== undefined));
             pageToken = response.data?.page_token;
         } while (pageToken);
         return allIds;
