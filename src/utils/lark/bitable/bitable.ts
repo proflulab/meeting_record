@@ -71,8 +71,8 @@ export async function createRecords(tableId: string, fields: Record<string, Fiel
                 fields,
             },
         });
-        console.log('飞书 createRecords API 完整返回:', JSON.stringify(response, null, 2)); // 添加日志输出
-        return response;
+        // console.log(response.data);
+        return response.data;
     } catch (error: unknown) {
         if (error instanceof Error) {
             throw new Error(`创建记录失败: ${error.message}`);
@@ -141,7 +141,7 @@ export async function searchRecords(tableId: string, params: {
             },
         });
         // console.log(response.data);
-        return response;
+        return response.data;
     } catch (error: unknown) {
         if (error instanceof Error) {
             throw new Error(`创建记录失败: ${error.message}`);
@@ -372,7 +372,7 @@ export async function findAllRecordsByUniqueKey(tableId: string, uniqueKeyField:
         }
         const filter = `CurrentValue.[${uniqueKeyField}]=\"${uniqueKeyValue}\"`;
         let pageToken = undefined;
-        const allIds: string[] = [];
+        let allIds: string[] = [];
         do {
             const response = await client.base.appTableRecord.list({
                 path: { table_id: tableId },
@@ -383,7 +383,7 @@ export async function findAllRecordsByUniqueKey(tableId: string, uniqueKeyField:
                 },
             });
             const items = response.data?.items || [];
-            allIds.push(...items.map((item: Record<string, unknown>) => item.record_id as string));
+            allIds.push(...items.map((item: any) => item.record_id));
             pageToken = response.data?.page_token;
         } while (pageToken);
         return allIds;
