@@ -135,10 +135,7 @@ export async function searchRecords(tableId: string, params: {
 
         const response = await client.base.appTableRecord.list({
             path: { table_id: tableId },
-            params: {
-                ...params,
-                user_id_type:"open_id", // 确保 user_id_type 默认为 open_id
-            },
+            params: params,
         });
         // console.log(response.data);
         return response.data;
