@@ -33,6 +33,20 @@ const eventDispatcher = new lark.EventDispatcher({
 }).register({
     'drive.file.bitable_record_changed_v1': async (data: Record<string, unknown>) => {
         console.log('收到飞书多维表格变更事件:', data);
+         // 转发事件数据到 /api/feishu-fill
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/feishu-fill`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+
+    const result = await response.text();
+    console.log('已转发给 feishu-fill，返回:', result);
+  } catch (err) {
+    console.error('转发到 feishu-fill 失败:', err);
+  }
+
         return 'success';
     },
     // 添加通用事件处理

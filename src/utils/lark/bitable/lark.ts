@@ -648,6 +648,7 @@ export async function updateTableRecord(
                 fields: fields,
             }
         });
+        console.log('飞书 batchUpdateRecords API 完整返回:', JSON.stringify(result, null, 2)); // 添加日志输出
 
         return result.data
 

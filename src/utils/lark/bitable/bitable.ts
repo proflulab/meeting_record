@@ -64,7 +64,7 @@ export async function createRecords(tableId: string, fields: Record<string, Fiel
         if (!process.env.LARK_BASE_APP_TOKEN || !process.env.LARK_BASE_PERSONAL_TOKEN) {
             throw new Error('缺少必要的飞书多维表格配置，请检查环境变量 LARK_BASE_APP_TOKEN 和 LARK_BASE_PERSONAL_TOKEN');
         }
-
+ // 添加日志输出
         const response = await client.base.appTableRecord.create({
             path: { table_id: tableId },
             data: {
@@ -291,19 +291,103 @@ export async function batchUpdateRecords(tableId: string, recordsData: Array<{
         if (!process.env.LARK_BASE_APP_TOKEN || !process.env.LARK_BASE_PERSONAL_TOKEN) {
             throw new Error('缺少必要的飞书多维表格配置，请检查环境变量 LARK_BASE_APP_TOKEN 和 LARK_BASE_PERSONAL_TOKEN');
         }
-
+        console.log('飞书 createRecords API 调用参数:', JSON.stringify({ recordsData }, null, 2));
         const response = await client.base.appTableRecord.batchUpdate({
             path: { table_id: tableId },
             data: {
                 records: recordsData,
             },
         });
-        // console.log(response.data);
+        console.log('飞书 batchUpdateRecords API 完整返回:', JSON.stringify(response, null, 2)); // 添加日志输出
         return response.data;
     } catch (error: unknown) {
         if (error instanceof Error) {
             throw new Error(`批量更新记录失败: ${error.message}`);
         }
         throw new Error('批量更新记录失败: 未知错误');
+    }
+}
+
+/** * 通过唯一键查找记录
+ * @param tableId 表格ID
+ * @param uniqueKeyField 唯一键字段名
+ * @param uniqueKeyValue 唯一键字段值
+ * @returns 找到的记录ID，如果未找到或找到多个则返回 null
+ */
+export async function findRecordByUniqueKey(tableId: string, uniqueKeyField: string, uniqueKeyValue: string): Promise<string | null> {
+    try {
+        // 验证环境变量配置
+        if (!process.env.LARK_BASE_APP_TOKEN || !process.env.LARK_BASE_PERSONAL_TOKEN) {
+            throw new Error('缺少必要的飞书多维表格配置，请检查环境变量 LARK_BASE_APP_TOKEN 和 LARK_BASE_PERSONAL_TOKEN');
+        }
+
+        // 构建过滤器，精确匹配唯一键字段
+        // 注意：字段名需要用方括号括起来，字符串值需要用双引号括起来
+        const filter = `CurrentValue.[${uniqueKeyField}]="${uniqueKeyValue}"`;
+
+        console.log(`Searching in table ${tableId} with filter: ${filter}`);
+
+        const response = await client.base.appTableRecord.list({
+            path: { table_id: tableId },
+            params: {
+                filter: filter,
+                page_size: 2 // 只需检查是否存在以及是否唯一
+            },
+        });
+
+        if (response.data && response.data.items && response.data.items.length === 1) {
+            console.log(`Found record with unique key ${uniqueKeyValue}: ${response.data.items[0].record_id}`);
+            return response.data.items[0].record_id || null;
+        } else if (response.data && response.data.items && response.data.items.length > 1) {
+            console.warn(`Found multiple records with unique key ${uniqueKeyValue} in table ${tableId}. Cannot determine unique record.`);
+            return null; // 找到多个记录，无法确定唯一性
+        } else {
+            console.log(`No record found with unique key ${uniqueKeyValue} in table ${tableId}.`);
+            return null; // 未找到记录
+        }
+    } catch (error: unknown) {
+        if (error instanceof Error) {
+            console.error(`通过唯一键查找记录失败 (${uniqueKeyValue}): ${error.message}`);
+            throw new Error(`通过唯一键查找记录失败: ${error.message}`);
+        }
+        console.error(`通过唯一键查找记录失败 (${uniqueKeyValue}): 未知错误`);
+        throw new Error('通过唯一键查找记录失败: 未知错误');
+    }
+}
+
+/**
+ * 通过唯一键查找所有匹配记录ID
+ * @param tableId 表格ID
+ * @param uniqueKeyField 唯一键字段名
+ * @param uniqueKeyValue 唯一键字段值
+ * @returns 匹配的所有记录ID数组
+ */
+export async function findAllRecordsByUniqueKey(tableId: string, uniqueKeyField: string, uniqueKeyValue: string): Promise<string[]> {
+    try {
+        if (!process.env.LARK_BASE_APP_TOKEN || !process.env.LARK_BASE_PERSONAL_TOKEN) {
+            throw new Error('缺少必要的飞书多维表格配置，请检查环境变量 LARK_BASE_APP_TOKEN 和 LARK_BASE_PERSONAL_TOKEN');
+        }
+        const filter = `CurrentValue.[${uniqueKeyField}]=\"${uniqueKeyValue}\"`;
+        let pageToken = undefined;
+        const allIds: string[] = [];
+        do {
+            const response = await client.base.appTableRecord.list({
+                path: { table_id: tableId },
+                params: {
+                    filter,
+                    page_size: 100,
+                    page_token: pageToken
+                },
+            });
+            const items = response.data?.items || [];
+            allIds.push(...items.map((item: { record_id?: string }) => item.record_id).filter((id): id is string => id !== undefined));
+            pageToken = response.data?.page_token;
+        } while (pageToken);
+        return allIds;
+    } catch (error: unknown) {
+        if (error instanceof Error) {
+            throw new Error(`通过唯一键查找所有记录失败: ${error.message}`);
+        }
+        throw new Error('通过唯一键查找所有记录失败: 未知错误');
     }
 }
