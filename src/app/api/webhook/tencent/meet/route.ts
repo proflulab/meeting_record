@@ -13,6 +13,21 @@ const ENCODING_AES_KEY = process.env.TENCENT_MEETING_ENCODING_AES_KEY || "";
 const MEET_DATA_TABLE_ID = process.env.MEET_DATA_TABLE_ID || "";
 const NUM_RECORD_TABLE_ID = process.env.NUM_RECORD_TABLE_ID || "";
 
+type RawUser = {
+    userid: string;
+    uuid: string;
+    user_name: string;
+    phone: string;
+    [key: string]: any;
+};
+
+type CleanedUser = {
+    userid: string;
+    uuid: string;
+    user_name: string;
+    phone: string;
+};
+
 /**
  * GET请求处理 - 用于URL有效性验证
  */
@@ -122,7 +137,7 @@ export async function POST(request: NextRequest) {
                     subject
                 } = meetingInfo;
 
-                // 处理所有录制文件
+                // 循环处理所有录制文件
                 for (const recordingFile of payload.recording_files) {
                     const { record_file_id } = recordingFile;
                     console.log(`处理录制文件ID: ${record_file_id}`);
@@ -189,32 +204,59 @@ export async function POST(request: NextRequest) {
                         continue;
                     }
 
-                    // 解码参会者名称并提取为数组
-                    const participantNames = [...new Set(participantsData.participants.map(participant => {
+                    function decodeBase64(str: string): string {
                         try {
-                            // Base64解码
-                            const decodedName = Buffer.from(participant.user_name, 'base64').toString('utf-8');
-                            return decodedName;
-                        } catch (error) {
-                            console.error(`解码参会者名称失败: ${participant.user_name}`, error);
-                            return participant.user_name; // 如果解码失败，返回原始值
+                            return Buffer.from(str, 'base64').toString('utf-8');
+                        } catch {
+                            return str; // 保留原始值
                         }
-                    }))];
+                    }
 
-                    // 更新记录-参会者
+                    function cleanAndDeduplicate(data: RawUser[]): CleanedUser[] {
+                        const seenUserIds = new Set<string>();
+                        const result: CleanedUser[] = [];
+
+                        for (const user of data) {
+                            const { userid, uuid, user_name, phone } = user;
+
+                            if (userid && seenUserIds.has(userid)) continue;
+                            if (userid) seenUserIds.add(userid);
+
+                            result.push({
+                                userid,
+                                uuid,
+                                phone,
+                                user_name: decodeBase64(user_name),
+                            });
+                        }
+
+                        return result;
+                    }
+                    // 示例用法：
+                    const rawData: RawUser[] = participantsData.participants; // 将你的原始 JSON 数据放这里
+                    const cleanedData = cleanAndDeduplicate(rawData);
+
+                    const userNames: string[] = cleanedData.map(user => user.user_name);
+
+
+                    // 更新表MEET_DATA_TABLE_ID记录的participants-参会者列表名字
                     await updateRecords(MEET_DATA_TABLE_ID, recordId, {
-                        participants: String(participantNames),
+                        participants: String(userNames),
                     });
 
-                    console.log(participantNames);
-                    for (const participant of participantNames) {
+                    // console.log(participantNames);
+                    for (const participant of cleanedData) {
 
                         const names = extractParticipants(summaryfileContent || "");
-                        if (!names.includes(participant)) {
+
+                        if (!names.includes(participant.user_name)) {
                             const recordData2 = {
-                                participant,
+                                participant: participant.user_name,
                                 meet_data: [recordId],
-                                participant_summary: `成员${participant}参加例会，但是未发言`
+                                uuid: participant.uuid,
+                                phone_hase: participant.phone,
+                                userid: participant.userid,
+                                participant_summary: `成员${participant.user_name}参加例会，但是未发言`
                             };
                             await createRecords(NUM_RECORD_TABLE_ID, recordData2);
                             continue;
@@ -234,8 +276,11 @@ export async function POST(request: NextRequest) {
 
                             // 构建记录数据
                             const recordData2 = {
-                                participant,
+                                participant: participant.user_name,
                                 meet_data: [recordId],
+                                uuid: participant.uuid,
+                                phone_hase: participant.phone,
+                                userid: participant.userid,
                                 participant_summary: summary
                             };
                             await createRecords(NUM_RECORD_TABLE_ID, recordData2);
@@ -243,8 +288,6 @@ export async function POST(request: NextRequest) {
                             console.error(`为参会者 ${participant} 总结项目进度失败:`, error);
                         }
                     }
-
-
                 }
                 console.log('所有录制文件处理完成');
                 break;
