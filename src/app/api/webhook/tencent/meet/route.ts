@@ -18,7 +18,7 @@ type RawUser = {
     uuid: string;
     user_name: string;
     phone: string;
-    [key: string]: any;
+    [key: string]: unknown;
 };
 
 type CleanedUser = {
@@ -233,7 +233,13 @@ export async function POST(request: NextRequest) {
                         return result;
                     }
                     // 示例用法：
-                    const rawData: RawUser[] = participantsData.participants; // 将你的原始 JSON 数据放这里
+                    const rawData: RawUser[] = participantsData.participants.map(participant => ({
+                        ...participant,
+                        userid: participant.userid,
+                        uuid: participant.uuid,
+                        user_name: participant.user_name,
+                        phone: participant.phone
+                    })); // 将MeetingParticipantDetail转换为RawUser类型
                     const cleanedData = cleanAndDeduplicate(rawData);
 
                     const userNames: string[] = cleanedData.map(user => user.user_name);
