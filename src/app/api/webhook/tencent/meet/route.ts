@@ -273,11 +273,11 @@ export async function POST(request: NextRequest) {
                             const summary = await chatCompletion({
                                 messages: [
                                     { role: "system", content: "你是一个会议记录分析助手，专注于为每位参会者总结其在会议中的项目进度。" },
-                                    { role: "user", content: `请根据以下会议内容，针对参会者“${participant}”在本次会议中的项目进度进行简要总结。\n会议内容：${transcriptsfileContent}` }
+                                    { role: "user", content: `请根据以下会议内容，针对参会者“${participant.user_name}”在本次会议中的项目进度进行简要总结。\n会议内容：${transcriptsfileContent}` }
                                 ],
                                 model: "deepseek-v3-250324"
                             });
-                            console.log(`参会者 ${participant} 项目进度总结:`, summary);
+                            console.log(`参会者 ${participant.user_name} 项目进度总结:`, summary);
                             // 可选：将summary写入数据库或更新记录
 
                             // 构建记录数据
@@ -291,7 +291,7 @@ export async function POST(request: NextRequest) {
                             };
                             await createRecords(NUM_RECORD_TABLE_ID, recordData2);
                         } catch (error) {
-                            console.error(`为参会者 ${participant} 总结项目进度失败:`, error);
+                            console.error(`为参会者 ${participant.user_name} 总结项目进度失败:`, error);
                         }
                     }
                 }
